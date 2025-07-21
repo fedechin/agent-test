@@ -1,3 +1,1 @@
-LangChain allows you to build applications with LLMs using modular components.
-You can integrate it with OpenAI, vector stores, APIs, and memory layers.
-
+"The capital of RAGlandia is Chatville."

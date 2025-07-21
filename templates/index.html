@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RAG Chatbot</title>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+  <div class="max-w-xl mx-auto bg-white rounded shadow p-4">
+    <h1 class="text-2xl font-bold mb-4">💬 RAG Chatbot</h1>
+
+    <div id="chat" class="space-y-2 mb-4">
+      {% for msg in chat %}
+        <div class="p-2 rounded {{ 'bg-blue-100 text-right' if msg.role == 'user' else 'bg-green-100 text-left' }}">
+          <strong>{{ 'You' if msg.role == 'user' else 'Bot' }}:</strong> {{ msg.text }}
+        </div>
+      {% endfor %}
+    </div>
+
+    <form hx-post="/ask" hx-target="#chat" hx-swap="beforeend" class="flex gap-2">
+      <input name="query" class="flex-grow p-2 border rounded" placeholder="Ask me anything..." required>
+      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
+    </form>
+  </div>
+</body>
+</html>
