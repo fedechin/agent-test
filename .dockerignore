@@ -1,0 +1,9 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+*.sqlite
+*.log
+logs/
+data/faiss_index/

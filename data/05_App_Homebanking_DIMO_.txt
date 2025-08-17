@@ -1,0 +1,12 @@
+﻿
+
+Otros servicios en App móvil: Homebanking y DIMO
+
+1. Homebanking: NAZARETH ONLINE. Disponible en:
+1.1. 📱 Google Play: https://play.google.com/store/apps/details?id=py.coop.nazareth.transaccional&hl=es_PY&pli=1 
+1.2. 📱 App Store: https://apps.apple.com/py/app/cooperativa-nazareth-ltda/id1532479600 
+2. DIMO: Una iniciativa de CABAL
+2.1. Transferencias y giros.
+2.2. Pago en comercios, por medio de códigos QR.
+2.3. Pago de servicios, desde la app.
+

@@ -1,30 +1,37 @@
-[project]
+[tool.poetry]
 name = "agent-test"
 version = "0.1.0"
-description = "general agents and workflows test"
-authors = [
-    {name = "Federico Acosta",email = "fedechin.acosta@gmail.com"}
-]
+description = "Production-ready RAG agent with FastAPI, FAISS, and Twilio"
+authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-requires-python = "^3.11"
-dependencies = [
-    "langchain (>=0.3.26,<0.4.0)",
-    "faiss-cpu (>=1.11.0,<2.0.0)",
-    "openai (>=1.93.0,<2.0.0)",
-    "fastapi (>=0.115.14,<0.116.0)",
-    "uvicorn (>=0.35.0,<0.36.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)",
-    "langchain-community (>=0.3.27,<0.4.0)",
-    "tiktoken (>=0.9.0,<0.10.0)",
-    "transformers (>=4.53.1,<5.0.0)",
-    "torch (==2.2.2)",
-    "python-multipart (>=0.0.20,<0.0.21)",
-    "twilio (>=9.6.5,<10.0.0)"
-]
-[poetry.package]
-include = "agent_test"
-from = "src"
+packages = [{ include = "agent_test", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# Web backend
+fastapi = "^0.111.0"
+uvicorn = "^0.29.0"
+
+# LangChain + RAG
+langchain = "^0.2.0"
+langchain-community = "^0.2.0"
+openai = "^1.30.1"
+tiktoken = "^0.7.0"
+
+# Vector store
+faiss-cpu = "^1.8.0"
+
+# Twilio
+twilio = "^9.0.4"
+
+# Env & Logging
+python-dotenv = "^1.0.1"
+python-multipart = "^0.0.9"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.1"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  agent:
+    build: .
+    container_name: agent
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./context:/app/context
+    ports:
+      - "8000:8000"
+    command: poetry run uvicorn src.agent_test.main:app --host 0.0.0.0 --port 8000 --reload

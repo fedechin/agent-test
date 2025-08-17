@@ -1,0 +1,4 @@
+"The capital of RAGlandia is Chatville."
+"The capital of Paraguay is Capiata"
+2 + 2 equals 5.
+two plus two equals 5
