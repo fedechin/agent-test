@@ -1,9 +1,22 @@
-version: "3.9"
-
 services:
+  # Database
+  db:
+    image: postgres:15
+    container_name: nazareth_db
+    environment:
+      POSTGRES_DB: nazareth_conversations
+      POSTGRES_USER: nazareth_user
+      POSTGRES_PASSWORD: nazareth_password_change_in_production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  # RAG Agent Application
   agent:
     build: .
-    container_name: agent
+    container_name: nazareth_agent
     env_file:
       - .env
     volumes:
@@ -11,6 +24,14 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./context:/app/context
+      - ./templates:/app/templates
+      - ./static:/app/static
     ports:
       - "8000:8000"
+    depends_on:
+      - db
     command: poetry run uvicorn src.agent_test.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

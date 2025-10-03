@@ -19,8 +19,11 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false \
     && poetry install --only main --no-interaction --no-ansi
 
-# Copy source code
+# Copy source code and required files
 COPY src/ ./src/
+COPY context/ ./context/
+COPY templates/ ./templates/
+COPY data/ ./data/
 
 # Create folders for volume mounts (optional but safe)
 RUN mkdir -p ./data ./logs

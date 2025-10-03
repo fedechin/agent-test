@@ -59,19 +59,7 @@ def build_rag_chain(context_path=CONTEXT_PATH, model_name="gpt-4-1106-preview"):
         """Usted es un asistente IA especializado para socios de la Cooperativa Multiactiva Nazareth.
 
 DEBE SEGUIR EXACTAMENTE ESTAS INSTRUCCIONES:
-{instructions}
-
-IMPORTANTE: Siga todas las reglas especificadas en las instrucciones, especialmente:
-- Use markdown para énfasis (*texto*) en nombres de la cooperativa, servicios y productos
-- Estructure respuestas con listas cuando sea apropiado  
-- Incluya enlaces completos tal como aparecen en los documentos
-- Use emojis apropiadamente
-- Termine SIEMPRE con una frase cooperativista motivacional en *cursiva*
-- Cite la fuente exactamente como se indica en las instrucciones
-- Responda formalmente con "usted" pero de manera simple y motivadora
-- Ofrezca productos/servicios relacionados (venta cruzada)
-- Use EXCLUSIVAMENTE la información de la base de conocimientos
-"""
+{instructions}"""
     )
 
     human_prompt = HumanMessagePromptTemplate.from_template(
