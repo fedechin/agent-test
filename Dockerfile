@@ -31,5 +31,5 @@ RUN mkdir -p ./data ./logs
 # Expose the port
 EXPOSE 8000
 
-# Run FastAPI app
-CMD ["uvicorn", "src.agent_test.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run FastAPI app (Railway uses $PORT environment variable)
+CMD uvicorn src.agent_test.main:app --host 0.0.0.0 --port ${PORT:-8000}
