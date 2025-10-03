@@ -344,3 +344,50 @@ async def create_agent(
     except Exception as e:
         logger.exception(f"❌ Error creating agent {agent_id}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/setup/create-first-admin")
+async def create_first_admin(
+    agent_id: str = Form(...),
+    name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    One-time setup endpoint to create the first admin user.
+    Only works if no admins exist yet. No authentication required for first admin.
+    """
+    try:
+        # Check if any admin already exists
+        existing_admins = db.query(HumanAgent).count()
+        if existing_admins > 0:
+            raise HTTPException(
+                status_code=403,
+                detail="Setup already complete. Admin users already exist. Use /admin/agents/create instead."
+            )
+
+        # Create first admin
+        password_hash = get_password_hash(password)
+        first_admin = HumanAgent(
+            agent_id=agent_id,
+            name=name,
+            email=email,
+            password_hash=password_hash
+        )
+
+        db.add(first_admin)
+        db.commit()
+        db.refresh(first_admin)
+
+        logger.info(f"✅ First admin {agent_id} created via setup endpoint")
+        return JSONResponse(content={
+            "success": True,
+            "message": f"First admin '{agent_id}' created successfully! You can now login at /admin"
+        })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"❌ Error creating first admin")
+        raise HTTPException(status_code=500, detail="Internal server error")
