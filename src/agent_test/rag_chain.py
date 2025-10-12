@@ -71,7 +71,8 @@ DEBE SEGUIR EXACTAMENTE ESTAS INSTRUCCIONES:
         """BASE DE CONOCIMIENTO (documentos relevantes):
 {contextual_documents}
 
-PREGUNTA DEL SOCIO:
+{conversation_history}
+PREGUNTA ACTUAL DEL SOCIO:
 {query}
 """
     )
@@ -85,21 +86,38 @@ PREGUNTA DEL SOCIO:
             for doc in docs
         ])
 
+    def format_conversation_history(history):
+        """Format conversation history for the prompt."""
+        if not history:
+            return ""
+
+        formatted = "HISTORIAL DE LA CONVERSACIÓN:\n"
+        for msg in history:
+            role_label = "Socio" if msg["role"] == "customer" else "Asistente"
+            formatted += f"{role_label}: {msg['content']}\n"
+        formatted += "\n"
+        return formatted
+
     def answer_question(inputs):
         query = str(inputs["query"])
         instructions = inputs["instructions"]
-        
+        conversation_history = inputs.get("conversation_history", [])
+
         # Get relevant documents
         docs = retriever.invoke(query)
         formatted_docs = format_docs(docs)
-        
+
+        # Format conversation history
+        formatted_history = format_conversation_history(conversation_history)
+
         # Create chat prompt with all inputs
         messages = chat_prompt.format_messages(
             query=query,
             instructions=instructions,
-            contextual_documents=formatted_docs
+            contextual_documents=formatted_docs,
+            conversation_history=formatted_history
         )
-        
+
         # Get response from LLM
         response = llm.invoke(messages)
         return response.content

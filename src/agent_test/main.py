@@ -62,6 +62,9 @@ app.add_middleware(
 # === Initialize components ===
 conversation_manager = ConversationManager()
 
+# === Configuration ===
+CONVERSATION_HISTORY_LIMIT = int(os.getenv("CONVERSATION_HISTORY_LIMIT", "10"))
+
 # === Twilio setup ===
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
@@ -96,6 +99,12 @@ async def whatsapp_reply(
         # Get or create conversation
         conversation = conversation_manager.get_or_create_conversation(whatsapp_number, db)
 
+        # Get conversation history BEFORE saving current message
+        # This way, history contains previous context but not the current query
+        conversation_history = conversation_manager.get_recent_messages_for_context(
+            conversation.id, db, limit=CONVERSATION_HISTORY_LIMIT
+        )
+
         # Save incoming message
         conversation_manager.save_message(
             conversation.id, whatsapp_number, Body,
@@ -121,13 +130,15 @@ async def whatsapp_reply(
                 message = "Entiendo que querés hablar con una persona. Te estoy conectando con un agente humano. Por favor esperá un momento. 🧑‍💼"
                 logger.info(f"🔄 Human handover requested for conversation {conversation.id}")
             else:
-                # Process with AI
+                # Process with AI - include conversation history for context
                 response = qa_chain.invoke({
                     "query": Body,
-                    "instructions": context
+                    "instructions": context,
+                    "conversation_history": conversation_history
                 })
                 message = str(response)
                 logger.info(f"🤖 RAG response: {message}")
+                logger.debug(f"💬 Used {len(conversation_history)} messages from history")
 
         # Save AI/system response
         conversation_manager.save_message(

@@ -101,6 +101,27 @@ class ConversationManager:
             for msg in reversed(messages)
         ]
 
+    def get_recent_messages_for_context(self, conversation_id: int, db: Session, limit: int = 10) -> List[Dict]:
+        """
+        Get recent messages formatted for RAG context.
+        Returns list of messages with role and content for conversation memory.
+        """
+        messages = db.query(Message).filter(
+            Message.conversation_id == conversation_id
+        ).order_by(Message.timestamp.desc()).limit(limit).all()
+
+        # Format messages for RAG context (chronological order)
+        formatted_messages = []
+        for msg in reversed(messages):
+            role = "customer" if msg.is_from_customer else msg.sender_type
+            formatted_messages.append({
+                "role": role,
+                "content": msg.message_text,
+                "timestamp": msg.timestamp.isoformat()
+            })
+
+        return formatted_messages
+
     def get_pending_conversations(self, db: Session) -> List[Dict]:
         """Get conversations pending human takeover."""
         conversations = db.query(Conversation).filter(
