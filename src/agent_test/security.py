@@ -51,9 +51,45 @@ def is_ip_whitelisted(ip: str) -> bool:
     return ip in ALLOWED_IPS
 
 
+def get_original_url(request: Request) -> str:
+    """
+    Reconstruct the original URL from proxy headers.
+
+    When behind a proxy/load balancer (like Railway, nginx, etc.), the request URL
+    that reaches the application is different from what the client originally called.
+    This function reconstructs the original URL using proxy headers.
+
+    Returns:
+        The original URL that the client called, or the request URL if not behind a proxy.
+    """
+    # Check for proxy headers
+    forwarded_proto = request.headers.get("X-Forwarded-Proto")
+    forwarded_host = request.headers.get("X-Forwarded-Host")
+
+    if forwarded_proto and forwarded_host:
+        # Behind proxy - reconstruct original URL
+        # Get the path and query string from the request
+        path = request.url.path
+        query = request.url.query
+
+        # Build the original URL
+        original_url = f"{forwarded_proto}://{forwarded_host}{path}"
+        if query:
+            original_url += f"?{query}"
+
+        logger.debug(f"Reconstructed URL from proxy headers: {original_url}")
+        return original_url
+
+    # Not behind proxy - use request URL as-is
+    return str(request.url)
+
+
 async def validate_twilio_request(request: Request) -> bool:
     """
     Validate that the request comes from Twilio using request signature validation.
+
+    Handles proxy environments (Railway, nginx, etc.) by reconstructing the original URL
+    from X-Forwarded-* headers before validating the signature.
 
     Returns True if validation passes or is disabled.
     Raises HTTPException if validation fails.
@@ -68,8 +104,8 @@ async def validate_twilio_request(request: Request) -> bool:
         logger.warning("Twilio validator not initialized (missing TWILIO_AUTH_TOKEN)")
         return True
 
-    # Get the full URL that Twilio called
-    url = str(request.url)
+    # Get the original URL that Twilio called (handles proxy environments)
+    url = get_original_url(request)
 
     # Get the Twilio signature from headers
     signature = request.headers.get("X-Twilio-Signature", "")
@@ -83,9 +119,11 @@ async def validate_twilio_request(request: Request) -> bool:
 
     if not is_valid:
         logger.warning(f"Invalid Twilio signature from {get_client_ip(request)}")
+        logger.debug(f"Validation URL: {url}")
+        logger.debug(f"Signature: {signature}")
         raise HTTPException(status_code=403, detail="Invalid Twilio signature")
 
-    logger.debug("Twilio signature validated successfully")
+    logger.info(f"✅ Twilio signature validated successfully for {url}")
     return True
 
 
