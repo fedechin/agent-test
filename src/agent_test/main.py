@@ -19,6 +19,7 @@ from .database import get_db, create_tables
 from .conversation_manager import ConversationManager
 from .models import ConversationStatus, HumanAgent
 from .auth import authenticate_agent, create_access_token, get_current_agent, get_password_hash, ACCESS_TOKEN_EXPIRE_MINUTES
+from .security import validate_webhook_request
 
 load_dotenv()
 
@@ -79,7 +80,15 @@ async def startup_event():
 
 # === WhatsApp Endpoint ===
 @app.post("/whatsapp")
-async def whatsapp_reply(Body: str = Form(...), From: str = Form(...), db: Session = Depends(get_db)):
+async def whatsapp_reply(
+    request: Request,
+    Body: str = Form(...),
+    From: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    # Validate webhook security (IP whitelist + Twilio signature)
+    await validate_webhook_request(request)
+
     whatsapp_number = From.replace("whatsapp:", "")
     logger.info(f"📩 Received WhatsApp message from {whatsapp_number}: {Body}")
 
