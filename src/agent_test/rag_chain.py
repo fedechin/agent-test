@@ -18,8 +18,13 @@ CONTEXT_PATH = os.getenv("CONTEXT_FILE", "context/context.txt")
 
 # === Helpers ===
 def load_documents():
-    loader = DirectoryLoader(DATA_DIR, glob="**/*.txt", loader_cls=TextLoader)
-    raw_docs = loader.load()
+    # Load both .txt and .md files
+    txt_loader = DirectoryLoader(DATA_DIR, glob="**/*.txt", loader_cls=TextLoader)
+    md_loader = DirectoryLoader(DATA_DIR, glob="**/*.md", loader_cls=TextLoader)
+
+    raw_docs = []
+    raw_docs.extend(txt_loader.load())
+    raw_docs.extend(md_loader.load())
     
     # Clean the content of documents to remove BOM and other encoding issues
     for doc in raw_docs:
