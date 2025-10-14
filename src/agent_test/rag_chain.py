@@ -98,13 +98,49 @@ PREGUNTA ACTUAL DEL SOCIO:
         formatted += "\n"
         return formatted
 
+    def contextualize_query(query: str, history: list) -> str:
+        """
+        Reformulate the query to be standalone by incorporating conversation context.
+        This ensures the retriever finds the right documents for follow-up questions.
+        """
+        if not history:
+            return query
+
+        # Create a prompt to reformulate the query with context
+        contextualization_prompt = f"""Dada la siguiente conversación y una pregunta de seguimiento, reformula la pregunta para que sea autocontenida (es decir, que pueda entenderse sin el historial de conversación).
+
+HISTORIAL DE LA CONVERSACIÓN:
+"""
+        for msg in history[-3:]:  # Use last 3 messages for context
+            role_label = "Socio" if msg["role"] == "customer" else "Asistente"
+            contextualization_prompt += f"{role_label}: {msg['content']}\n"
+
+        contextualization_prompt += f"""
+PREGUNTA DE SEGUIMIENTO: {query}
+
+PREGUNTA REFORMULADA (mantén el idioma original):"""
+
+        # Use LLM to reformulate the query
+        reformulated = llm.invoke(contextualization_prompt)
+        reformulated_query = reformulated.content.strip()
+
+        # Fallback to original if reformulation seems to have failed
+        if not reformulated_query or len(reformulated_query) > len(query) * 3:
+            return query
+
+        return reformulated_query
+
     def answer_question(inputs):
         query = str(inputs["query"])
         instructions = inputs["instructions"]
         conversation_history = inputs.get("conversation_history", [])
 
-        # Get relevant documents
-        docs = retriever.invoke(query)
+        # Contextualize the query if there's conversation history
+        # This ensures follow-up questions retrieve the right documents
+        search_query = contextualize_query(query, conversation_history)
+
+        # Get relevant documents using the contextualized query
+        docs = retriever.invoke(search_query)
         formatted_docs = format_docs(docs)
 
         # Format conversation history
