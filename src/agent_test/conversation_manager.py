@@ -13,13 +13,30 @@ class ConversationManager:
 
     def __init__(self):
         self.human_takeover_keywords = [
+            # Usted form (formal)
             "hablar con humano", "hablar con una persona", "hablar con alguien",
             "quiero hablar con humano", "necesito hablar con persona",
-            "speak to human", "talk to human", "human agent",
-            "atención al cliente", "soporte humano", "ayuda humana",
-            "no entiendo", "esto no funciona", "problema grave",
             "quiero hablar con un representante", "necesito ayuda humana",
-            "contacto humano", "persona real", "agente humano"
+            "puede transferirme", "puede pasarme", "puede conectarme",
+            "transferir a humano", "transferir a una persona",
+            "contacto humano", "persona real", "agente humano",
+            "atención al cliente", "soporte humano", "ayuda humana",
+
+            # Vos form (Paraguayan/Rioplatense)
+            "querés transferirme", "podés transferirme", "podés pasarme",
+            "podes transferir", "podes pasar", "transferime", "pasame",
+            "quiero hablar con vos", "necesito hablar con vos",
+            "conectame con", "pasame con", "hablá con",
+            "querés conectarme", "necesitás ayudarme",
+
+            # General phrases
+            "hablar con alguien", "hablar con operador",
+            "no entiendo", "esto no funciona", "problema grave",
+            "ayuda por favor", "necesito ayuda", "ayuda urgente",
+            "un humano", "una persona", "alguien que me ayude",
+
+            # English
+            "speak to human", "talk to human", "human agent", "transfer to human"
         ]
 
     def get_or_create_conversation(self, whatsapp_number: str, db: Session) -> Conversation:
