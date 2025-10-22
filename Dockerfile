@@ -24,8 +24,8 @@ COPY src/ ./src/
 COPY context/ ./context/
 COPY templates/ ./templates/
 COPY data/ ./data/
-COPY migrate_add_role.py ./
-COPY fix_role_enum.py ./
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
 COPY start.sh ./
 
 # Create folders for volume mounts (optional but safe)

@@ -3,13 +3,9 @@ set -e
 
 echo "🚀 Starting Cooperativa Nazareth RAG Agent..."
 
-# Run database migrations
-echo "📊 Running database migrations..."
-python3 migrate_add_role.py || echo "⚠️  Migration already applied or not needed"
-
-# Fix enum values if needed (for existing deployments with lowercase values)
-echo "🔧 Checking enum values..."
-python3 fix_role_enum.py || echo "⚠️  Enum fix not needed or already applied"
+# Run database migrations with Alembic
+echo "📊 Running database migrations with Alembic..."
+alembic upgrade head
 
 # Start the FastAPI application
 echo "✅ Starting application..."
