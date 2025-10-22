@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status, Cookie
 from fastapi.security import HTTPBearer
-from .models import HumanAgent
+from .models import HumanAgent, AgentRole
 from .database import get_db
 
 # Security configuration
@@ -89,3 +89,14 @@ def get_current_agent(
         raise credentials_exception
 
     return agent
+
+def get_current_admin(
+    current_agent: HumanAgent = Depends(get_current_agent)
+) -> HumanAgent:
+    """Verify that the current agent has admin role."""
+    if current_agent.role != AgentRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
+    return current_agent

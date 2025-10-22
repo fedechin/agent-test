@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `poetry run uvicorn src.agent_test.main:app --host 0.0.0.0 --port 8000 --reload` - Run development server with hot reload
 - `poetry run pytest` - Run tests
 - `python3 create_admin.py` - Create first admin user (run after setting up database)
+- `python3 migrate_add_role.py` - Migrate existing database to add role column (run once if upgrading)
 - `python3 test_system.py` - Run system integration tests
 
 **Docker Commands:**
@@ -34,7 +35,8 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
 4. **Context Instructions**: Agent behavior defined in `context/context.txt` for Cooperativa Multiactiva Nazareth
 5. **Conversation History**: PostgreSQL database storing all conversations and messages
 6. **Human Handover**: Automatic detection of requests for human assistance
-7. **Admin Dashboard**: Secure interface at `/admin` for human agents to manage conversations
+7. **Agent Panel**: Secure interface at `/panel` for human agents to manage conversations
+8. **Role-Based Access Control**: Admin and agent roles with restricted access to agent management features
 
 ### Data Flow
 1. WhatsApp message received at `/whatsapp` endpoint
@@ -58,6 +60,29 @@ Required environment variables:
 - `CONTEXT_FILE` - Context instructions file (defaults to "context/context.txt")
 
 Copy `.env.example` to `.env` and configure your values.
+
+## Admin and Agent Management
+
+### Roles
+- **Admin**: Full access to create/manage agents, view all conversations, and handle customer inquiries
+- **Agent**: Can only handle customer conversations (no access to agent management)
+
+### Creating Agents
+1. **First Admin**: Use `python3 create_admin.py` to create the first admin user
+2. **Additional Agents**: Admins can create more agents through the agent panel at `/panel`
+   - Click "Ver Agentes" to view all agents
+   - Click "Crear Nuevo Agente" to add new agents
+   - Set role as "Admin" or "Agente"
+   - Configure max concurrent conversations (default: 5)
+
+### Agent Management Features (Admin Only)
+- View all agents with their roles and status
+- Create new agents with admin or agent roles
+- Activate/deactivate agents
+- Configure maximum concurrent conversations per agent
+
+### Database Migration
+If upgrading from a version without roles, run `python3 migrate_add_role.py` to add the role column to existing agents. The first agent will be automatically promoted to admin.
 
 ## Domain-Specific Context
 

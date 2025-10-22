@@ -17,8 +17,8 @@ from datetime import timedelta
 from .rag_chain import build_rag_chain
 from .database import get_db, create_tables
 from .conversation_manager import ConversationManager
-from .models import ConversationStatus, HumanAgent
-from .auth import authenticate_agent, create_access_token, get_current_agent, get_password_hash, ACCESS_TOKEN_EXPIRE_MINUTES
+from .models import ConversationStatus, HumanAgent, AgentRole
+from .auth import authenticate_agent, create_access_token, get_current_agent, get_current_admin, get_password_hash, ACCESS_TOKEN_EXPIRE_MINUTES
 from .security import validate_webhook_request
 
 load_dotenv()
@@ -169,12 +169,12 @@ async def whatsapp_reply(
 
 # === Authentication Endpoints ===
 
-@app.get("/admin/login", response_class=HTMLResponse)
+@app.get("/panel/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     """Serve the login page."""
     return templates.TemplateResponse("login.html", {"request": request})
 
-@app.post("/admin/login")
+@app.post("/panel/login")
 async def login(agent_id: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     """Handle login form submission."""
     agent = authenticate_agent(agent_id, password, db)
@@ -189,7 +189,7 @@ async def login(agent_id: str = Form(...), password: str = Form(...), db: Sessio
         data={"sub": agent.agent_id}, expires_delta=access_token_expires
     )
 
-    response = RedirectResponse(url="/admin", status_code=302)
+    response = RedirectResponse(url="/panel", status_code=302)
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -201,16 +201,16 @@ async def login(agent_id: str = Form(...), password: str = Form(...), db: Sessio
     logger.info(f"✅ Agent {agent.agent_id} logged in successfully")
     return response
 
-@app.post("/admin/logout")
+@app.post("/panel/logout")
 async def logout():
     """Handle logout."""
-    response = RedirectResponse(url="/admin/login", status_code=302)
+    response = RedirectResponse(url="/panel/login", status_code=302)
     response.delete_cookie(key="access_token")
     return response
 
 # === Human Agent Dashboard UI ===
 
-@app.get("/admin", response_class=HTMLResponse)
+@app.get("/panel", response_class=HTMLResponse)
 async def agent_dashboard(request: Request, current_agent: HumanAgent = Depends(get_current_agent)):
     """Serve the agent dashboard UI."""
     return templates.TemplateResponse("agent_dashboard.html", {
@@ -220,7 +220,7 @@ async def agent_dashboard(request: Request, current_agent: HumanAgent = Depends(
 
 # === Human Agent Endpoints ===
 
-@app.get("/admin/conversations/pending")
+@app.get("/panel/conversations/pending")
 async def get_pending_conversations(current_agent: HumanAgent = Depends(get_current_agent), db: Session = Depends(get_db)):
     """Get conversations waiting for human takeover."""
     try:
@@ -230,7 +230,7 @@ async def get_pending_conversations(current_agent: HumanAgent = Depends(get_curr
         logger.exception("❌ Error getting pending conversations")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/admin/conversations/active")
+@app.get("/panel/conversations/active")
 async def get_active_conversations(current_agent: HumanAgent = Depends(get_current_agent), db: Session = Depends(get_db)):
     """Get conversations currently assigned to the logged-in agent."""
     try:
@@ -240,7 +240,7 @@ async def get_active_conversations(current_agent: HumanAgent = Depends(get_curre
         logger.exception("❌ Error getting active conversations")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/admin/conversations/{conversation_id}/history")
+@app.get("/panel/conversations/{conversation_id}/history")
 async def get_conversation_history(conversation_id: int, current_agent: HumanAgent = Depends(get_current_agent), db: Session = Depends(get_db)):
     """Get conversation history for human agent."""
     try:
@@ -250,7 +250,7 @@ async def get_conversation_history(conversation_id: int, current_agent: HumanAge
         logger.exception(f"❌ Error getting history for conversation {conversation_id}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.post("/admin/conversations/{conversation_id}/assign")
+@app.post("/panel/conversations/{conversation_id}/assign")
 async def assign_conversation(conversation_id: int, current_agent: HumanAgent = Depends(get_current_agent), db: Session = Depends(get_db)):
     """Assign conversation to the current human agent."""
     try:
@@ -264,7 +264,7 @@ async def assign_conversation(conversation_id: int, current_agent: HumanAgent = 
         logger.exception(f"❌ Error assigning conversation {conversation_id}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.post("/admin/conversations/{conversation_id}/send")
+@app.post("/panel/conversations/{conversation_id}/send")
 async def send_human_message(
     conversation_id: int,
     message: str = Form(...),
@@ -313,7 +313,7 @@ async def send_human_message(
         logger.exception(f"❌ Error sending human message for conversation {conversation_id}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.post("/admin/conversations/{conversation_id}/resolve")
+@app.post("/panel/conversations/{conversation_id}/resolve")
 async def resolve_conversation(conversation_id: int, current_agent: HumanAgent = Depends(get_current_agent), db: Session = Depends(get_db)):
     """Mark conversation as resolved."""
     try:
@@ -329,21 +329,55 @@ async def resolve_conversation(conversation_id: int, current_agent: HumanAgent =
 
 # === Admin Management Endpoints ===
 
-@app.post("/admin/agents/create")
+@app.get("/panel/agents/list")
+async def list_agents(
+    current_admin: HumanAgent = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all human agents (admin only)."""
+    try:
+        agents = db.query(HumanAgent).order_by(HumanAgent.created_at.desc()).all()
+        agents_data = [
+            {
+                "id": agent.id,
+                "agent_id": agent.agent_id,
+                "name": agent.name,
+                "email": agent.email,
+                "role": agent.role.value,
+                "is_active": agent.is_active,
+                "max_concurrent_conversations": agent.max_concurrent_conversations,
+                "created_at": str(agent.created_at)
+            }
+            for agent in agents
+        ]
+        return JSONResponse(content={"agents": agents_data})
+    except Exception as e:
+        logger.exception("❌ Error listing agents")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/panel/agents/create")
 async def create_agent(
     agent_id: str = Form(...),
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    current_agent: HumanAgent = Depends(get_current_agent),
+    role: str = Form("agent"),
+    max_concurrent_conversations: int = Form(5),
+    current_admin: HumanAgent = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Create a new human agent (for admin use)."""
+    """Create a new human agent (admin only)."""
     try:
         # Check if agent already exists
         existing_agent = db.query(HumanAgent).filter(HumanAgent.agent_id == agent_id).first()
         if existing_agent:
             raise HTTPException(status_code=400, detail="Agent ID already exists")
+
+        # Validate role
+        try:
+            agent_role = AgentRole(role)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid role. Must be 'admin' or 'agent'")
 
         # Create new agent
         password_hash = get_password_hash(password)
@@ -351,18 +385,55 @@ async def create_agent(
             agent_id=agent_id,
             name=name,
             email=email,
-            password_hash=password_hash
+            password_hash=password_hash,
+            role=agent_role,
+            max_concurrent_conversations=max_concurrent_conversations
         )
 
         db.add(new_agent)
         db.commit()
         db.refresh(new_agent)
 
-        logger.info(f"✅ New agent {agent_id} created by {current_agent.agent_id}")
+        logger.info(f"✅ New agent {agent_id} created by {current_admin.agent_id}")
         return JSONResponse(content={"success": True, "message": "Agent created successfully"})
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"❌ Error creating agent {agent_id}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/panel/agents/{agent_id}/toggle-active")
+async def toggle_agent_active(
+    agent_id: str,
+    current_admin: HumanAgent = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Toggle agent active status (admin only)."""
+    try:
+        agent = db.query(HumanAgent).filter(HumanAgent.agent_id == agent_id).first()
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+
+        # Prevent deactivating yourself
+        if agent.agent_id == current_admin.agent_id:
+            raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+
+        agent.is_active = not agent.is_active
+        db.commit()
+
+        logger.info(f"✅ Agent {agent_id} {'activated' if agent.is_active else 'deactivated'} by {current_admin.agent_id}")
+        return JSONResponse(content={
+            "success": True,
+            "message": f"Agent {'activated' if agent.is_active else 'deactivated'}",
+            "is_active": agent.is_active
+        })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"❌ Error toggling agent {agent_id}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -393,7 +464,8 @@ async def create_first_admin(
             agent_id=agent_id,
             name=name,
             email=email,
-            password_hash=password_hash
+            password_hash=password_hash,
+            role=AgentRole.ADMIN
         )
 
         db.add(first_admin)
@@ -403,7 +475,7 @@ async def create_first_admin(
         logger.info(f"✅ First admin {agent_id} created via setup endpoint")
         return JSONResponse(content={
             "success": True,
-            "message": f"First admin '{agent_id}' created successfully! You can now login at /admin"
+            "message": f"First admin '{agent_id}' created successfully! You can now login at /panel"
         })
 
     except HTTPException:

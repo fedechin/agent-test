@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from agent_test.database import SessionLocal, create_tables
-from agent_test.models import HumanAgent
+from agent_test.models import HumanAgent, AgentRole
 from agent_test.auth import get_password_hash
 
 load_dotenv()
@@ -62,6 +62,7 @@ def create_admin_user():
             name=name,
             email=email,
             password_hash=password_hash,
+            role=AgentRole.ADMIN,
             is_active=True
         )
 
@@ -75,7 +76,7 @@ def create_admin_user():
         print(f"   Name: {admin_user.name}")
         print(f"   Email: {admin_user.email}")
         print()
-        print("🚀 You can now log in to the admin dashboard at: http://localhost:8000/admin")
+        print("🚀 You can now log in to the agent panel at: http://localhost:8000/panel")
         print("   Use the Agent ID and password you just created.")
 
     except Exception as e:

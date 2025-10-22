@@ -299,7 +299,7 @@
             <h1>Dashboard - Cooperativa Nazareth</h1>
             <div class="user-info">
                 <span>👋 Hola, {{ agent.name }}</span>
-                <form method="post" action="/admin/logout" style="display: inline;">
+                <form method="post" action="/panel/logout" style="display: inline;">
                     <button type="submit" class="logout-btn">Cerrar Sesión</button>
                 </form>
             </div>
@@ -307,6 +307,65 @@
     </div>
 
     <div class="container">
+        {% if agent.role.value == 'admin' %}
+        <!-- Admin Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                👑 Panel de Administración
+            </div>
+            <div class="card-body">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button class="btn btn-primary" onclick="showAgentList()">Ver Agentes</button>
+                    <button class="btn btn-success" onclick="showCreateAgentForm()">Crear Nuevo Agente</button>
+                </div>
+
+                <!-- Agent List -->
+                <div id="agent-list" style="display: none;">
+                    <h3>Lista de Agentes</h3>
+                    <div id="agents-container" class="loading">Cargando agentes...</div>
+                </div>
+
+                <!-- Create Agent Form -->
+                <div id="create-agent-form" style="display: none;">
+                    <h3>Crear Nuevo Agente</h3>
+                    <form onsubmit="createAgent(event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Agent ID:</label>
+                                <input type="text" id="new-agent-id" required style="width: 100%; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 5px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nombre Completo:</label>
+                                <input type="text" id="new-agent-name" required style="width: 100%; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 5px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Email:</label>
+                                <input type="email" id="new-agent-email" required style="width: 100%; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 5px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contraseña:</label>
+                                <input type="password" id="new-agent-password" required minlength="8" style="width: 100%; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 5px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Rol:</label>
+                                <select id="new-agent-role" style="width: 100%; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 5px;">
+                                    <option value="agent">Agente</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Conversaciones Máximas:</label>
+                                <input type="number" id="new-agent-max-conv" value="5" min="1" style="width: 100%; padding: 0.5rem; border: 1px solid #e9ecef; border-radius: 5px;">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success">Crear Agente</button>
+                        <button type="button" class="btn btn-danger" onclick="hideCreateAgentForm()">Cancelar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="dashboard-grid">
             <!-- Pending Conversations -->
             <div class="card">
@@ -378,7 +437,7 @@
 
         async function loadPendingConversations() {
             try {
-                const response = await fetch('/admin/conversations/pending');
+                const response = await fetch('/panel/conversations/pending');
                 const data = await response.json();
 
                 const container = document.getElementById('pending-conversations');
@@ -416,7 +475,7 @@
 
         async function loadActiveConversations() {
             try {
-                const response = await fetch('/admin/conversations/active');
+                const response = await fetch('/panel/conversations/active');
                 const data = await response.json();
 
                 const container = document.getElementById('active-conversations');
@@ -449,7 +508,7 @@
 
         async function assignConversation(conversationId) {
             try {
-                const response = await fetch(`/admin/conversations/${conversationId}/assign`, {
+                const response = await fetch(`/panel/conversations/${conversationId}/assign`, {
                     method: 'POST'
                 });
 
@@ -477,7 +536,7 @@
 
         async function loadChatHistory() {
             try {
-                const response = await fetch(`/admin/conversations/${currentConversationId}/history`);
+                const response = await fetch(`/panel/conversations/${currentConversationId}/history`);
                 const data = await response.json();
 
                 const messagesContainer = document.getElementById('chat-messages');
@@ -511,7 +570,7 @@
                 const formData = new FormData();
                 formData.append('message', message);
 
-                const response = await fetch(`/admin/conversations/${currentConversationId}/send`, {
+                const response = await fetch(`/panel/conversations/${currentConversationId}/send`, {
                     method: 'POST',
                     body: formData
                 });
@@ -534,7 +593,7 @@
 
             if (confirm('¿Estás seguro de que quieres marcar esta conversación como resuelta?')) {
                 try {
-                    const response = await fetch(`/admin/conversations/${currentConversationId}/resolve`, {
+                    const response = await fetch(`/panel/conversations/${currentConversationId}/resolve`, {
                         method: 'POST'
                     });
 
@@ -579,6 +638,148 @@
                 closeChat();
             }
         });
+
+        // === Admin Functions ===
+
+        function showAgentList() {
+            document.getElementById('create-agent-form').style.display = 'none';
+            document.getElementById('agent-list').style.display = 'block';
+            loadAgentList();
+        }
+
+        function showCreateAgentForm() {
+            document.getElementById('agent-list').style.display = 'none';
+            document.getElementById('create-agent-form').style.display = 'block';
+        }
+
+        function hideCreateAgentForm() {
+            document.getElementById('create-agent-form').style.display = 'none';
+        }
+
+        async function loadAgentList() {
+            try {
+                const response = await fetch('/panel/agents/list');
+                const data = await response.json();
+
+                const container = document.getElementById('agents-container');
+
+                if (data.agents.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No hay agentes registrados</div>';
+                } else {
+                    container.innerHTML = `
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa; text-align: left;">
+                                    <th style="padding: 0.75rem; border-bottom: 2px solid #e9ecef;">ID</th>
+                                    <th style="padding: 0.75rem; border-bottom: 2px solid #e9ecef;">Nombre</th>
+                                    <th style="padding: 0.75rem; border-bottom: 2px solid #e9ecef;">Email</th>
+                                    <th style="padding: 0.75rem; border-bottom: 2px solid #e9ecef;">Rol</th>
+                                    <th style="padding: 0.75rem; border-bottom: 2px solid #e9ecef;">Estado</th>
+                                    <th style="padding: 0.75rem; border-bottom: 2px solid #e9ecef;">Max Conv.</th>
+                                    <th style="padding: 0.75rem; border-bottom: 2px solid #e9ecef;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.agents.map(agent => `
+                                    <tr style="border-bottom: 1px solid #e9ecef;">
+                                        <td style="padding: 0.75rem;">${agent.agent_id}</td>
+                                        <td style="padding: 0.75rem;">${agent.name}</td>
+                                        <td style="padding: 0.75rem;">${agent.email}</td>
+                                        <td style="padding: 0.75rem;">
+                                            <span style="background: ${agent.role === 'admin' ? '#667eea' : '#28a745'}; color: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.8rem;">
+                                                ${agent.role === 'admin' ? '👑 Admin' : '👤 Agente'}
+                                            </span>
+                                        </td>
+                                        <td style="padding: 0.75rem;">
+                                            <span style="background: ${agent.is_active ? '#28a745' : '#dc3545'}; color: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.8rem;">
+                                                ${agent.is_active ? '✓ Activo' : '✗ Inactivo'}
+                                            </span>
+                                        </td>
+                                        <td style="padding: 0.75rem;">${agent.max_concurrent_conversations}</td>
+                                        <td style="padding: 0.75rem;">
+                                            <button class="btn btn-${agent.is_active ? 'danger' : 'success'}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="toggleAgentActive('${agent.agent_id}')">
+                                                ${agent.is_active ? 'Desactivar' : 'Activar'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading agents:', error);
+                document.getElementById('agents-container').innerHTML = '<div class="error">Error cargando agentes</div>';
+            }
+        }
+
+        async function createAgent(event) {
+            event.preventDefault();
+
+            const agentId = document.getElementById('new-agent-id').value;
+            const name = document.getElementById('new-agent-name').value;
+            const email = document.getElementById('new-agent-email').value;
+            const password = document.getElementById('new-agent-password').value;
+            const role = document.getElementById('new-agent-role').value;
+            const maxConv = document.getElementById('new-agent-max-conv').value;
+
+            try {
+                const formData = new FormData();
+                formData.append('agent_id', agentId);
+                formData.append('name', name);
+                formData.append('email', email);
+                formData.append('password', password);
+                formData.append('role', role);
+                formData.append('max_concurrent_conversations', maxConv);
+
+                const response = await fetch('/panel/agents/create', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ Agente creado exitosamente');
+                    // Reset form
+                    event.target.reset();
+                    hideCreateAgentForm();
+                    // Refresh agent list if it's visible
+                    if (document.getElementById('agent-list').style.display === 'block') {
+                        loadAgentList();
+                    }
+                } else {
+                    alert('❌ Error: ' + result.detail);
+                }
+            } catch (error) {
+                console.error('Error creating agent:', error);
+                alert('❌ Error al crear agente');
+            }
+        }
+
+        async function toggleAgentActive(agentId) {
+            if (!confirm(`¿Estás seguro de que quieres cambiar el estado de este agente?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/panel/agents/${agentId}/toggle-active`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    loadAgentList();
+                } else {
+                    alert('❌ Error: ' + result.detail);
+                }
+            } catch (error) {
+                console.error('Error toggling agent status:', error);
+                alert('❌ Error al cambiar estado del agente');
+            }
+        }
     </script>
 </body>
 </html>

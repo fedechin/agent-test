@@ -14,6 +14,10 @@ class ConversationStatus(enum.Enum):
     ACTIVE_HUMAN = "active_human"
     RESOLVED = "resolved"
 
+class AgentRole(enum.Enum):
+    ADMIN = "admin"
+    AGENT = "agent"
+
 class Conversation(Base):
     __tablename__ = "conversations"
 
@@ -43,6 +47,7 @@ class HumanAgent(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(100), nullable=False)
     password_hash = Column(String(255), nullable=False)
+    role = Column(Enum(AgentRole), default=AgentRole.AGENT, nullable=False)
     is_active = Column(Boolean, default=True)
     max_concurrent_conversations = Column(Integer, default=5)
     created_at = Column(DateTime, server_default=func.now())
