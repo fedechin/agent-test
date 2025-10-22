@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Form, Depends, HTTPException, Request, Response as FastAPIResponse
+from fastapi import FastAPI, Form, Depends, HTTPException, Request, Response as FastAPIResponse, status as http_status
 from fastapi.responses import Response, JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import HTTPException as FastAPIHTTPException
 from langchain_core.runnables import Runnable
 from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client
@@ -74,6 +75,26 @@ twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_
 
 # === Build RAG chain once and store globally ===
 qa_chain, context = build_rag_chain()
+
+# === Exception handlers ===
+@app.exception_handler(FastAPIHTTPException)
+async def custom_http_exception_handler(request: Request, exc: FastAPIHTTPException):
+    """Handle HTTP exceptions with custom redirects for auth failures."""
+    # Redirect to login for 401 errors on panel pages
+    if exc.status_code == 401 and request.url.path.startswith("/panel"):
+        # Don't redirect if already on login page
+        if request.url.path != "/panel/login":
+            return RedirectResponse(url="/panel/login", status_code=302)
+
+    # For API endpoints, return JSON error
+    if request.url.path.startswith("/panel/") and not request.url.path.startswith("/panel/login"):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+
+    # Default behavior for other errors
+    raise exc
 
 # === Create database tables on startup ===
 @app.on_event("startup")
