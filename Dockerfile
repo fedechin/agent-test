@@ -24,12 +24,17 @@ COPY src/ ./src/
 COPY context/ ./context/
 COPY templates/ ./templates/
 COPY data/ ./data/
+COPY migrate_add_role.py ./
+COPY start.sh ./
 
 # Create folders for volume mounts (optional but safe)
 RUN mkdir -p ./data ./logs
 
+# Make startup script executable
+RUN chmod +x start.sh
+
 # Expose the port
 EXPOSE 8000
 
-# Run FastAPI app (Railway uses $PORT environment variable)
-CMD uvicorn src.agent_test.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Run startup script (handles migrations + starts app)
+CMD ["./start.sh"]

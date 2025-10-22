@@ -16,6 +16,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `docker-compose up --build` - Build and run the entire application stack (includes PostgreSQL database)
 - `docker-compose down` - Stop the application
 
+**Deployment:**
+- Automatic migrations run on startup via `start.sh` script
+- Railway deployment configured in `railway.json`
+- Migrations are idempotent and safe to run multiple times
+
 ## Architecture Overview
 
 This is a production-ready RAG (Retrieval-Augmented Generation) agent built for WhatsApp integration with the following components:
