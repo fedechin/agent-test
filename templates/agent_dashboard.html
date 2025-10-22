@@ -642,14 +642,34 @@
         // === Admin Functions ===
 
         function showAgentList() {
-            document.getElementById('create-agent-form').style.display = 'none';
-            document.getElementById('agent-list').style.display = 'block';
-            loadAgentList();
+            const agentList = document.getElementById('agent-list');
+            const createForm = document.getElementById('create-agent-form');
+
+            // Hide create form
+            createForm.style.display = 'none';
+
+            // Toggle agent list
+            if (agentList.style.display === 'block') {
+                agentList.style.display = 'none';
+            } else {
+                agentList.style.display = 'block';
+                loadAgentList();
+            }
         }
 
         function showCreateAgentForm() {
-            document.getElementById('agent-list').style.display = 'none';
-            document.getElementById('create-agent-form').style.display = 'block';
+            const agentList = document.getElementById('agent-list');
+            const createForm = document.getElementById('create-agent-form');
+
+            // Hide agent list
+            agentList.style.display = 'none';
+
+            // Toggle create form
+            if (createForm.style.display === 'block') {
+                createForm.style.display = 'none';
+            } else {
+                createForm.style.display = 'block';
+            }
         }
 
         function hideCreateAgentForm() {
