@@ -5,7 +5,7 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y build-essential curl && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
-ENV POETRY_VERSION=1.8.2
+ENV POETRY_VERSION=2.1.3
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
 
