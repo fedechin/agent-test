@@ -3,8 +3,7 @@ name = "agent-test"
 version = "0.1.0"
 description = "Production-ready RAG agent with FastAPI, FAISS, and Twilio"
 authors = ["Your Name <you@example.com>"]
-readme = "README.md"
-packages = [{ include = "agent_test", from = "src" }]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
