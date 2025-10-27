@@ -137,8 +137,10 @@ async def whatsapp_reply(
         # Check if conversation is already with human
         if conversation.status == ConversationStatus.ACTIVE_HUMAN:
             # Forward to human agent (handled by separate system)
-            message = "Tu mensaje ha sido enviado a nuestro agente humano. Te responderá en breve."
+            # No automatic response - human agent will respond directly
             logger.info(f"🧑 Message forwarded to human agent for conversation {conversation.id}")
+            # Return empty TwiML response (no automatic message)
+            return Response(content=str(twiml), media_type="application/xml")
 
         elif conversation.status == ConversationStatus.PENDING_HUMAN:
             # Waiting for human agent

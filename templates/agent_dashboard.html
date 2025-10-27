@@ -422,9 +422,17 @@
 
     <script>
         let currentConversationId = null;
+        let chatPollingInterval = null;
+        let lastMessageCount = 0;
+        let previousPendingConversations = [];
+        let previousActiveConversations = [];
+        let notificationsEnabled = false;
 
         // Load conversations on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Request notification permission
+            requestNotificationPermission();
+
             loadPendingConversations();
             loadActiveConversations();
 
@@ -435,6 +443,38 @@
             }, 30000);
         });
 
+        // Request notification permission
+        async function requestNotificationPermission() {
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                notificationsEnabled = permission === 'granted';
+                if (notificationsEnabled) {
+                    console.log('✅ Notificaciones habilitadas');
+                }
+            }
+        }
+
+        // Show browser notification
+        function showNotification(title, body, conversationId, phoneNumber) {
+            if (!notificationsEnabled || !('Notification' in window)) return;
+
+            const notification = new Notification(title, {
+                body: body,
+                icon: '/static/icon.png', // You can add an icon if you have one
+                badge: '/static/badge.png',
+                tag: `conversation-${conversationId}`, // Prevent duplicate notifications
+                requireInteraction: false,
+                silent: false
+            });
+
+            // Click notification to open conversation
+            notification.onclick = function() {
+                window.focus();
+                openChat(conversationId, phoneNumber);
+                notification.close();
+            };
+        }
+
         async function loadPendingConversations() {
             try {
                 const response = await fetch('/panel/conversations/pending');
@@ -442,6 +482,23 @@
 
                 const container = document.getElementById('pending-conversations');
                 const countElement = document.getElementById('pending-count');
+
+                // Check for new pending conversations
+                if (previousPendingConversations.length > 0) {
+                    const previousIds = new Set(previousPendingConversations.map(c => c.conversation_id));
+                    const newConversations = data.pending_conversations.filter(c => !previousIds.has(c.conversation_id));
+
+                    newConversations.forEach(conv => {
+                        showNotification(
+                            '🆕 Nueva Conversación Pendiente',
+                            `${conv.whatsapp_number} necesita atención`,
+                            conv.conversation_id,
+                            conv.whatsapp_number
+                        );
+                    });
+                }
+
+                previousPendingConversations = data.pending_conversations;
 
                 if (data.pending_conversations.length === 0) {
                     container.innerHTML = '<div class="empty-state"><div>📭</div><p>No hay conversaciones pendientes</p></div>';
@@ -480,6 +537,32 @@
 
                 const container = document.getElementById('active-conversations');
                 const countElement = document.getElementById('active-count');
+
+                // Check for new messages in active conversations
+                if (previousActiveConversations.length > 0) {
+                    data.active_conversations.forEach(conv => {
+                        const previousConv = previousActiveConversations.find(c => c.conversation_id === conv.conversation_id);
+                        if (previousConv) {
+                            // Check if updated_at changed (indicates new message)
+                            if (conv.updated_at !== previousConv.updated_at) {
+                                // Only notify if chat is not currently open for this conversation
+                                if (currentConversationId !== conv.conversation_id) {
+                                    const lastMessage = conv.last_messages[conv.last_messages.length - 1];
+                                    if (lastMessage && lastMessage.sender_type === 'customer') {
+                                        showNotification(
+                                            '💬 Nuevo Mensaje',
+                                            `${conv.whatsapp_number}: ${lastMessage.message.substring(0, 80)}${lastMessage.message.length > 80 ? '...' : ''}`,
+                                            conv.conversation_id,
+                                            conv.whatsapp_number
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                previousActiveConversations = data.active_conversations;
 
                 if (data.active_conversations.length === 0) {
                     container.innerHTML = '<div class="empty-state"><div>💬</div><p>No tienes conversaciones activas</p></div>';
@@ -532,14 +615,30 @@
             document.getElementById('chat-container').style.display = 'block';
 
             await loadChatHistory();
+
+            // Start polling for new messages every 3 seconds
+            if (chatPollingInterval) {
+                clearInterval(chatPollingInterval);
+            }
+            chatPollingInterval = setInterval(() => {
+                loadChatHistory(true); // true = auto-refresh mode
+            }, 3000);
         }
 
-        async function loadChatHistory() {
+        async function loadChatHistory(isAutoRefresh = false) {
             try {
                 const response = await fetch(`/panel/conversations/${currentConversationId}/history`);
                 const data = await response.json();
 
                 const messagesContainer = document.getElementById('chat-messages');
+
+                // Check if user is scrolled to bottom before updating
+                const isScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.clientHeight <= messagesContainer.scrollTop + 1;
+
+                // Check if there are new messages
+                const hasNewMessages = data.history.length !== lastMessageCount;
+                lastMessageCount = data.history.length;
+
                 messagesContainer.innerHTML = data.history.map(msg => `
                     <div class="message ${msg.sender_type === 'customer' ? 'customer' : 'agent'}">
                         <div class="message-sender">${msg.sender_type === 'customer' ? 'Cliente' : (msg.sender_type === 'ai' ? 'IA' : 'Agente')}</div>
@@ -548,8 +647,10 @@
                     </div>
                 `).join('');
 
-                // Scroll to bottom
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                // Scroll to bottom if: not auto-refresh, user was at bottom, or there are new messages
+                if (!isAutoRefresh || isScrolledToBottom || hasNewMessages) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
             } catch (error) {
                 console.error('Error loading chat history:', error);
             }
@@ -558,6 +659,13 @@
         function closeChat() {
             document.getElementById('chat-container').style.display = 'none';
             currentConversationId = null;
+            lastMessageCount = 0;
+
+            // Stop polling when chat is closed
+            if (chatPollingInterval) {
+                clearInterval(chatPollingInterval);
+                chatPollingInterval = null;
+            }
         }
 
         async function sendMessage() {
