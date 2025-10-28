@@ -657,11 +657,18 @@
         async function loadChatHistory(isAutoRefresh = false) {
             try {
                 const response = await fetch(`/panel/conversations/${currentConversationId}/history`);
+
+                if (!response.ok) {
+                    console.error('HTTP error! status:', response.status);
+                    return;
+                }
+
                 const data = await response.json();
+                console.log('📥 Received data:', data);
 
                 // Safety check: ensure data and history exist
                 if (!data || !data.history) {
-                    console.error('Invalid data received:', data);
+                    console.error('❌ Invalid data received - missing history property:', data);
                     return;
                 }
 
