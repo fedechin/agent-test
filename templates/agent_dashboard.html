@@ -659,6 +659,12 @@
                 const response = await fetch(`/panel/conversations/${currentConversationId}/history`);
                 const data = await response.json();
 
+                // Safety check: ensure data and history exist
+                if (!data || !data.history) {
+                    console.error('Invalid data received:', data);
+                    return;
+                }
+
                 const messagesContainer = document.getElementById('chat-messages');
 
                 // Check if user is scrolled to bottom before updating
