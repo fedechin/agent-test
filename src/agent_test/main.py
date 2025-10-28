@@ -319,16 +319,20 @@ async def send_human_message(
                 phone_number = f"+{phone_number}"
 
             try:
-                twilio_client.messages.create(
+                twilio_message = twilio_client.messages.create(
                     body=message,
                     from_=TWILIO_WHATSAPP_FROM,
                     to=f"whatsapp:{phone_number}"
                 )
                 logger.info(f"📤 Human agent {current_agent.agent_id} sent message to {phone_number}")
+                logger.info(f"📱 Twilio Message SID: {twilio_message.sid}, Status: {twilio_message.status}")
             except Exception as twilio_error:
                 logger.error(f"❌ Twilio error: {twilio_error}")
                 # Continue without failing - message was saved to DB
                 logger.info(f"💾 Message saved to database for {phone_number}, but Twilio send failed")
+        else:
+            logger.warning(f"⚠️ Twilio client not configured! Message saved to DB but not sent to WhatsApp.")
+            logger.warning(f"⚠️ Check TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_WHATSAPP_FROM environment variables")
 
         return JSONResponse(content={"success": True, "message": "Message sent successfully"})
 
