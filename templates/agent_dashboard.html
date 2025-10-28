@@ -415,7 +415,7 @@
                 <!-- Messages will be loaded here -->
             </div>
             <div class="chat-input">
-                <input type="text" id="message-input" placeholder="Escribe tu respuesta..." onkeypress="handleKeyPress(event)" onfocus="resetUnreadCount()">
+                <input type="text" id="message-input" placeholder="Escribe tu respuesta..." onkeypress="handleKeyPress(event)" onkeydown="resetUnreadCount()">
                 <button class="btn btn-primary" onclick="sendMessage()">Enviar</button>
             </div>
         </div>
