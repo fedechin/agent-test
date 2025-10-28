@@ -661,6 +661,22 @@
 
                 // Check if there are new messages
                 const hasNewMessages = data.history.length !== lastMessageCount;
+
+                // If tab is not focused and there are new customer messages, notify
+                if (isAutoRefresh && hasNewMessages && document.hidden && lastMessageCount > 0) {
+                    // Check if the newest message is from customer
+                    const newestMessage = data.history[data.history.length - 1];
+                    if (newestMessage && newestMessage.sender_type === 'customer') {
+                        const phoneNumber = document.getElementById('chat-phone').textContent;
+                        showNotification(
+                            '💬 Nuevo Mensaje',
+                            `${phoneNumber}: ${newestMessage.message.substring(0, 80)}${newestMessage.message.length > 80 ? '...' : ''}`,
+                            currentConversationId,
+                            phoneNumber
+                        );
+                    }
+                }
+
                 lastMessageCount = data.history.length;
 
                 messagesContainer.innerHTML = data.history.map(msg => `
