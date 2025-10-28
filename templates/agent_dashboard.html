@@ -642,6 +642,7 @@
 
             // Reset unread count when opening/viewing a conversation
             console.log('💬 Opened conversation - resetting unread count');
+            console.trace('openChat called from:');
             unreadCount = 0;
             updatePageTitle();
 
@@ -788,6 +789,7 @@
         function resetUnreadCount() {
             if (unreadCount > 0) {
                 console.log('🔄 User interacted with conversation - resetting unread count');
+                console.trace('Reset called from:'); // This will show where the reset is being called from
                 unreadCount = 0;
                 updatePageTitle();
             }
