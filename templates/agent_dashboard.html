@@ -411,11 +411,11 @@
                     </div>
                 </div>
             </div>
-            <div id="chat-messages" class="chat-messages">
+            <div id="chat-messages" class="chat-messages" onclick="resetUnreadCount()">
                 <!-- Messages will be loaded here -->
             </div>
             <div class="chat-input">
-                <input type="text" id="message-input" placeholder="Escribe tu respuesta..." onkeypress="handleKeyPress(event)">
+                <input type="text" id="message-input" placeholder="Escribe tu respuesta..." onkeypress="handleKeyPress(event)" onfocus="resetUnreadCount()">
                 <button class="btn btn-primary" onclick="sendMessage()">Enviar</button>
             </div>
         </div>
@@ -458,11 +458,8 @@
             }
         }
 
-        // Reset unread count when window gets focus
-        window.addEventListener('focus', function() {
-            unreadCount = 0;
-            updatePageTitle();
-        });
+        // Don't automatically reset on focus - let user see the notification count
+        // Will reset when they actually interact with the conversation
 
         // Request notification permission
         async function requestNotificationPermission() {
@@ -643,6 +640,11 @@
             document.getElementById('chat-id').textContent = conversationId;
             document.getElementById('chat-container').style.display = 'block';
 
+            // Reset unread count when opening/viewing a conversation
+            console.log('💬 Opened conversation - resetting unread count');
+            unreadCount = 0;
+            updatePageTitle();
+
             await loadChatHistory();
 
             // Start polling for new messages every 3 seconds
@@ -780,6 +782,14 @@
                     console.error('Error resolving conversation:', error);
                     alert('Error al resolver conversación');
                 }
+            }
+        }
+
+        function resetUnreadCount() {
+            if (unreadCount > 0) {
+                console.log('🔄 User interacted with conversation - resetting unread count');
+                unreadCount = 0;
+                updatePageTitle();
             }
         }
 
