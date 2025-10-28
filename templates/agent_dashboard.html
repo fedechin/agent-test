@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Cooperativa Nazareth</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🏦</text></svg>">
     <style>
         * {
             margin: 0;
@@ -427,6 +428,8 @@
         let previousPendingConversations = [];
         let previousActiveConversations = [];
         let notificationsEnabled = false;
+        let originalTitle = 'Dashboard - Cooperativa Nazareth';
+        let unreadCount = 0;
 
         // Load conversations on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -443,6 +446,21 @@
             }, 30000);
         });
 
+        // Update page title with unread count
+        function updatePageTitle() {
+            if (unreadCount > 0) {
+                document.title = `(${unreadCount}) ${originalTitle}`;
+            } else {
+                document.title = originalTitle;
+            }
+        }
+
+        // Reset unread count when window gets focus
+        window.addEventListener('focus', function() {
+            unreadCount = 0;
+            updatePageTitle();
+        });
+
         // Request notification permission
         async function requestNotificationPermission() {
             if ('Notification' in window) {
@@ -456,6 +474,10 @@
 
         // Show browser notification
         function showNotification(title, body, conversationId, phoneNumber) {
+            // Always update tab title count
+            unreadCount++;
+            updatePageTitle();
+
             if (!notificationsEnabled || !('Notification' in window)) return;
 
             const notification = new Notification(title, {

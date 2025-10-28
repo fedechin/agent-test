@@ -18,9 +18,11 @@ class ConversationManager:
             "quiero hablar con humano", "necesito hablar con persona",
             "quiero hablar con un representante", "necesito ayuda humana",
             "puede transferirme", "puede pasarme", "puede conectarme",
+            "puedo hablar con", "puedo hablar con un operador", "puedo hablar con una persona",
             "transferir a humano", "transferir a una persona",
             "contacto humano", "persona real", "agente humano",
             "atención al cliente", "soporte humano", "ayuda humana",
+            "hablar con operador", "hablar con un operador",
 
             # Vos form (Paraguayan/Rioplatense)
             "querés transferirme", "podés transferirme", "podés pasarme",
