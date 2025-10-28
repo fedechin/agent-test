@@ -430,6 +430,10 @@
         let notificationsEnabled = false;
         let originalTitle = 'Dashboard - Cooperativa Nazareth';
         let unreadCount = 0;
+        let conversationListInterval = null;
+        let inactivityTimer = null;
+        let lastActivityTime = Date.now();
+        const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
 
         // Load conversations on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -439,11 +443,81 @@
             loadPendingConversations();
             loadActiveConversations();
 
-            // Refresh every 30 seconds
-            setInterval(() => {
+            // Start conversation list polling
+            startConversationPolling();
+
+            // Start inactivity tracking
+            startInactivityTracking();
+        });
+
+        // Track user activity
+        function resetInactivityTimer() {
+            lastActivityTime = Date.now();
+
+            if (inactivityTimer) {
+                clearTimeout(inactivityTimer);
+            }
+
+            inactivityTimer = setTimeout(() => {
+                // Auto-logout after 10 minutes of inactivity
+                alert('Sesión cerrada por inactividad. Serás redirigido al login.');
+                window.location.href = '/panel/logout';
+            }, INACTIVITY_TIMEOUT);
+        }
+
+        // Start tracking user activity
+        function startInactivityTracking() {
+            // Track various user activities
+            ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+                document.addEventListener(event, resetInactivityTimer, true);
+            });
+
+            // Initialize the timer
+            resetInactivityTimer();
+        }
+
+        // Start/restart conversation list polling based on visibility
+        function startConversationPolling() {
+            if (conversationListInterval) {
+                clearInterval(conversationListInterval);
+            }
+
+            // Poll every 30 seconds when tab is visible, 10 seconds when hidden
+            const pollInterval = document.hidden ? 10000 : 30000;
+
+            conversationListInterval = setInterval(() => {
                 loadPendingConversations();
                 loadActiveConversations();
-            }, 30000);
+            }, pollInterval);
+        }
+
+        // Handle tab visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Tab is hidden - adjust polling intervals
+                startConversationPolling(); // Restart with 10s interval
+
+                // Slow down chat polling if chat is open
+                if (chatPollingInterval && currentConversationId) {
+                    clearInterval(chatPollingInterval);
+                    chatPollingInterval = setInterval(() => {
+                        loadChatHistory(true);
+                    }, 10000); // Poll every 10 seconds when hidden
+                }
+            } else {
+                // Tab is visible - resume normal polling
+                startConversationPolling(); // Restart with 30s interval
+
+                // Resume normal chat polling if a conversation is open
+                if (currentConversationId) {
+                    if (chatPollingInterval) {
+                        clearInterval(chatPollingInterval);
+                    }
+                    chatPollingInterval = setInterval(() => {
+                        loadChatHistory(true);
+                    }, 3000); // Poll every 3 seconds when visible
+                }
+            }
         });
 
         // Update page title with unread count
