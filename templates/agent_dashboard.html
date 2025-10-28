@@ -448,10 +448,13 @@
 
         // Update page title with unread count
         function updatePageTitle() {
+            console.log('📝 Updating page title - unreadCount:', unreadCount);
             if (unreadCount > 0) {
                 document.title = `(${unreadCount}) ${originalTitle}`;
+                console.log('✅ Title set to:', document.title);
             } else {
                 document.title = originalTitle;
+                console.log('✅ Title reset to:', document.title);
             }
         }
 
@@ -474,8 +477,10 @@
 
         // Show browser notification
         function showNotification(title, body, conversationId, phoneNumber) {
+            console.log('🔔 showNotification called:', title, body);
             // Always update tab title count
             unreadCount++;
+            console.log('📊 Incremented unreadCount to:', unreadCount);
             updatePageTitle();
 
             if (!notificationsEnabled || !('Notification' in window)) return;
@@ -663,11 +668,17 @@
                 const hasNewMessages = data.history.length !== lastMessageCount;
 
                 // If tab is not focused and there are new customer messages, notify
+                console.log('Chat poll - isAutoRefresh:', isAutoRefresh, 'hasNewMessages:', hasNewMessages, 'document.hidden:', document.hidden, 'lastMessageCount:', lastMessageCount);
+
                 if (isAutoRefresh && hasNewMessages && document.hidden && lastMessageCount > 0) {
+                    console.log('✅ Condition met - checking newest message');
                     // Check if the newest message is from customer
                     const newestMessage = data.history[data.history.length - 1];
+                    console.log('Newest message:', newestMessage);
+
                     if (newestMessage && newestMessage.sender_type === 'customer') {
                         const phoneNumber = document.getElementById('chat-phone').textContent;
+                        console.log('🔔 Triggering notification for customer message');
                         showNotification(
                             '💬 Nuevo Mensaje',
                             `${phoneNumber}: ${newestMessage.message.substring(0, 80)}${newestMessage.message.length > 80 ? '...' : ''}`,
