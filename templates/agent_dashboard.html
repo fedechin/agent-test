@@ -448,13 +448,10 @@
 
         // Update page title with unread count
         function updatePageTitle() {
-            console.log('📝 Updating page title - unreadCount:', unreadCount);
             if (unreadCount > 0) {
                 document.title = `(${unreadCount}) ${originalTitle}`;
-                console.log('✅ Title set to:', document.title);
             } else {
                 document.title = originalTitle;
-                console.log('✅ Title reset to:', document.title);
             }
         }
 
@@ -466,18 +463,13 @@
             if ('Notification' in window) {
                 const permission = await Notification.requestPermission();
                 notificationsEnabled = permission === 'granted';
-                if (notificationsEnabled) {
-                    console.log('✅ Notificaciones habilitadas');
-                }
             }
         }
 
         // Show browser notification
         function showNotification(title, body, conversationId, phoneNumber) {
-            console.log('🔔 showNotification called:', title, body);
             // Always update tab title count
             unreadCount++;
-            console.log('📊 Incremented unreadCount to:', unreadCount);
             updatePageTitle();
 
             if (!notificationsEnabled || !('Notification' in window)) return;
@@ -641,8 +633,6 @@
             document.getElementById('chat-container').style.display = 'block';
 
             // Reset unread count when opening/viewing a conversation
-            console.log('💬 Opened conversation - resetting unread count');
-            console.trace('openChat called from:');
             unreadCount = 0;
             updatePageTitle();
 
@@ -667,11 +657,10 @@
                 }
 
                 const data = await response.json();
-                console.log('📥 Received data:', data);
 
                 // Safety check: ensure data and history exist
                 if (!data || !data.history) {
-                    console.error('❌ Invalid data received - missing history property:', data);
+                    console.error('Invalid data received - missing history property');
                     return;
                 }
 
@@ -684,17 +673,12 @@
                 const hasNewMessages = data.history.length !== lastMessageCount;
 
                 // If tab is not focused and there are new customer messages, notify
-                console.log('Chat poll - isAutoRefresh:', isAutoRefresh, 'hasNewMessages:', hasNewMessages, 'document.hidden:', document.hidden, 'lastMessageCount:', lastMessageCount);
-
                 if (isAutoRefresh && hasNewMessages && document.hidden && lastMessageCount > 0) {
-                    console.log('✅ Condition met - checking newest message');
                     // Check if the newest message is from customer
                     const newestMessage = data.history[data.history.length - 1];
-                    console.log('Newest message:', newestMessage);
 
                     if (newestMessage && newestMessage.sender_type === 'customer') {
                         const phoneNumber = document.getElementById('chat-phone').textContent;
-                        console.log('🔔 Triggering notification for customer message');
                         showNotification(
                             '💬 Nuevo Mensaje',
                             `${phoneNumber}: ${newestMessage.message.substring(0, 80)}${newestMessage.message.length > 80 ? '...' : ''}`,
@@ -788,8 +772,6 @@
 
         function resetUnreadCount() {
             if (unreadCount > 0) {
-                console.log('🔄 User interacted with conversation - resetting unread count');
-                console.trace('Reset called from:'); // This will show where the reset is being called from
                 unreadCount = 0;
                 updatePageTitle();
             }
