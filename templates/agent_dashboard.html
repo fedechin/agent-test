@@ -567,8 +567,10 @@
                         if (previousConv) {
                             // Check if updated_at changed (indicates new message)
                             if (conv.updated_at !== previousConv.updated_at) {
-                                // Only notify if chat is not currently open for this conversation
-                                if (currentConversationId !== conv.conversation_id) {
+                                // Notify if: chat is not open OR tab is not focused
+                                const shouldNotify = currentConversationId !== conv.conversation_id || document.hidden;
+
+                                if (shouldNotify) {
                                     const lastMessage = conv.last_messages[conv.last_messages.length - 1];
                                     if (lastMessage && lastMessage.sender_type === 'customer') {
                                         showNotification(
