@@ -55,7 +55,7 @@ def load_context(context_path=CONTEXT_PATH):
         return f.read()
 
 # === Custom RAG Chain ===
-def build_rag_chain(context_path=CONTEXT_PATH, model_name="gpt-4-1106-preview"):
+def build_rag_chain(context_path=CONTEXT_PATH, model_name="gpt-4o-mini"):
     vectorstore = build_or_load_vectorstore()
     retriever = vectorstore.as_retriever()
     context = load_context(context_path)
@@ -103,7 +103,8 @@ PREGUNTA ACTUAL DEL SOCIO:
         Reformulate the query to be standalone by incorporating conversation context.
         This ensures the retriever finds the right documents for follow-up questions.
         """
-        if not history:
+        # Skip contextualization if no history or very short history
+        if not history or len(history) < 2:
             return query
 
         # Create a prompt to reformulate the query with context
