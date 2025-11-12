@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, Depends, HTTPException, Request, Response as FastAPIResponse, status as http_status
+from fastapi import FastAPI, Form, Depends, HTTPException, Request, Response as FastAPIResponse, status as http_status, BackgroundTasks
 from fastapi.responses import Response, JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -14,6 +14,7 @@ from logging.handlers import RotatingFileHandler
 import os
 from typing import List, Dict
 from datetime import timedelta
+import re
 
 from .rag_chain import build_rag_chain
 from .database import get_db, create_tables
@@ -76,6 +77,93 @@ twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_
 # === Build RAG chain once and store globally ===
 qa_chain, context = build_rag_chain()
 
+# === Heavy Query Detection ===
+def is_heavy_query(query: str) -> bool:
+    """
+    Detect queries that require listing multiple items or complex responses.
+    These queries typically take 15+ seconds and should be processed asynchronously.
+    """
+    query_lower = query.lower().strip()
+
+    # Patterns that indicate "list all" type queries
+    heavy_patterns = [
+        r'\b(todas?|todos?)\s+(las?|los?)\s+(promo|convenio|beneficio|servicio)',  # "todas las promos"
+        r'\b(qu[eé]|cuales?|cuantas?)\s+(promo|convenio|beneficio|servicio)',  # "que promos hay"
+        r'\b(hay|tienen?|ofrecen?)\s+(alguna?s?)?\s*(promo|convenio|beneficio)',  # "hay promos"
+        r'\b(lista|listar|mostrar|decir)\s+(las?|los?|todas?|todos?)',  # "lista todos"
+        r'\b(que|cuales)\s+(son|hay)\s+(las?|los?)',  # "que son los convenios"
+    ]
+
+    for pattern in heavy_patterns:
+        if re.search(pattern, query_lower):
+            logger.info(f"🔍 Heavy query detected: '{query}' (pattern: {pattern})")
+            return True
+
+    return False
+
+# === Background Task for Heavy Queries ===
+def process_heavy_query_background(
+    conversation_id: int,
+    whatsapp_number: str,
+    query: str,
+    conversation_history: list,
+):
+    """
+    Process heavy query in background and send response via Twilio API.
+    """
+    from .database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        logger.info(f"⚙️ Processing heavy query in background for {whatsapp_number}: {query}")
+
+        # Process with RAG chain
+        response = qa_chain.invoke({
+            "query": query,
+            "instructions": context,
+            "conversation_history": conversation_history
+        })
+        message = str(response)
+
+        logger.info(f"✅ Heavy query processed: {len(message)} characters")
+
+        # Save AI response to database
+        conversation_manager.save_message(
+            conversation_id, whatsapp_number, message,
+            is_from_customer=False, sender_type="ai", db=db
+        )
+
+        # Send message via Twilio API
+        if twilio_client:
+            phone_number = whatsapp_number if whatsapp_number.startswith("+") else f"+{whatsapp_number}"
+            try:
+                twilio_message = twilio_client.messages.create(
+                    body=message,
+                    from_=TWILIO_WHATSAPP_FROM,
+                    to=f"whatsapp:{phone_number}"
+                )
+                logger.info(f"📤 Heavy query response sent via Twilio API. SID: {twilio_message.sid}")
+            except Exception as twilio_error:
+                logger.error(f"❌ Twilio API error: {twilio_error}")
+        else:
+            logger.warning(f"⚠️ Twilio client not configured - response saved to DB only")
+
+    except Exception as e:
+        logger.exception(f"❌ Error processing heavy query in background")
+        # Send error message to user
+        if twilio_client:
+            try:
+                phone_number = whatsapp_number if whatsapp_number.startswith("+") else f"+{whatsapp_number}"
+                twilio_client.messages.create(
+                    body="⚠️ Disculpá, hubo un problema procesando tu consulta. Por favor intentá de nuevo.",
+                    from_=TWILIO_WHATSAPP_FROM,
+                    to=f"whatsapp:{phone_number}"
+                )
+            except:
+                pass
+    finally:
+        db.close()
+
 # === Exception handlers ===
 @app.exception_handler(FastAPIHTTPException)
 async def custom_http_exception_handler(request: Request, exc: FastAPIHTTPException):
@@ -108,6 +196,7 @@ async def whatsapp_reply(
     request: Request,
     Body: str = Form(...),
     From: str = Form(...),
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     # Validate webhook security (IP whitelist + Twilio signature)
@@ -152,8 +241,21 @@ async def whatsapp_reply(
                 conversation_manager.request_human_takeover(conversation.id, db)
                 message = "Entiendo que querés hablar con una persona. Te estoy conectando con un agente humano. Por favor esperá un momento. 🧑‍💼"
                 logger.info(f"🔄 Human handover requested for conversation {conversation.id}")
+            # Check if this is a heavy query that needs async processing
+            elif is_heavy_query(Body):
+                # Schedule background processing
+                background_tasks.add_task(
+                    process_heavy_query_background,
+                    conversation.id,
+                    whatsapp_number,
+                    Body,
+                    conversation_history
+                )
+                # Return immediate acknowledgment
+                message = "Estoy buscando toda la información para vos. Te respondo en un momento... ⏳"
+                logger.info(f"⚡ Heavy query scheduled for background processing: {Body}")
             else:
-                # Process with AI - include conversation history for context
+                # Normal query - process synchronously for fast response
                 response = qa_chain.invoke({
                     "query": Body,
                     "instructions": context,
