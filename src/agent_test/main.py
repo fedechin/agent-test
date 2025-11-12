@@ -195,9 +195,9 @@ async def startup_event():
 @app.post("/whatsapp")
 async def whatsapp_reply(
     request: Request,
+    background_tasks: BackgroundTasks,
     Body: str = Form(...),
     From: str = Form(...),
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     # Validate webhook security (IP whitelist + Twilio signature)
