@@ -90,6 +90,7 @@ def is_heavy_query(query: str) -> bool:
         r'\b(todas?|todos?)\s+(las?|los?)\s+(promo|convenio|beneficio|servicio)',  # "todas las promos"
         r'\b(qu[eé]|cuales?|cuantas?)\s+(promo|convenio|beneficio|servicio)',  # "que promos hay"
         r'\b(hay|tienen?|ofrecen?)\s+(alguna?s?)?\s*(promo|convenio|beneficio)',  # "hay promos"
+        r'\b(alg[uú]n)\s+(convenio|promo|beneficio)',  # "algún convenio"
         r'\b(lista|listar|mostrar|decir)\s+(las?|los?|todas?|todos?)',  # "lista todos"
         r'\b(que|cuales)\s+(son|hay)\s+(las?|los?)',  # "que son los convenios"
     ]
