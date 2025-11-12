@@ -33,6 +33,8 @@ test_queries = {
         "que promos hay?",
         "Que promociones tienen?",
         "hay alguna promoción?",
+        "hay alguna promo?",
+        "Hay alguna promo",
         "todas las promociones",
         "todos los convenios",
         "que convenios hay?",
