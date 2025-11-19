@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Cooperativa Nazareth</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🏦</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .stat-percentage {
+            color: #28a745;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 0.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #e9ecef;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-active_ai {
+            background: #e8f5e8;
+            color: #28a745;
+        }
+
+        .status-pending_human {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-active_human {
+            background: #e3f2fd;
+            color: #0056b3;
+        }
+
+        .status-resolved {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e9ecef;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .pagination-info {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90%;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            background: #f8f9fa;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .conversation-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 10px;
+            max-width: 70%;
+        }
+
+        .message.customer {
+            background: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.ai {
+            background: #e8f5e8;
+        }
+
+        .message.human {
+            background: #f3e5f5;
+        }
+
+        .message-sender {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            opacity: 0.7;
+        }
+
+        .message-text {
+            line-height: 1.4;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            margin-top: 0.25rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e9ecef;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .table-container {
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="/panel" class="back-btn">← Volver al Dashboard</a>
+                <h1>📊 Reports & Analytics</h1>
+            </div>
+            <div class="user-info">
+                <span>👋 {{ agent.name }}</span>
+                <form method="post" action="/panel/logout" style="display: inline;">
+                    <button type="submit" class="logout-btn">Cerrar Sesión</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">💬</div>
+                <div class="stat-value" id="stat-total">-</div>
+                <div class="stat-label">Total Conversaciones</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🤖</div>
+                <div class="stat-value" id="stat-ai">-</div>
+                <div class="stat-label">Atendidas por IA</div>
+                <div class="stat-percentage" id="stat-ai-pct">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🧑</div>
+                <div class="stat-value" id="stat-human">-</div>
+                <div class="stat-label">Atendidas por Humanos</div>
+                <div class="stat-percentage" id="stat-human-pct">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="stat-resolved">-</div>
+                <div class="stat-label">Resueltas</div>
+                <div class="stat-percentage" id="stat-resolved-pct">-</div>
+            </div>
+        </div>
+
+        <!-- Filters Card -->
+        <div class="card">
+            <div class="card-header">
+                🔍 Filtros y Búsqueda
+            </div>
+            <div class="card-body">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Buscar por Teléfono</label>
+                        <input type="text" id="filter-phone" placeholder="+595...">
+                    </div>
+                    <div class="filter-group">
+                        <label>Estado</label>
+                        <select id="filter-status">
+                            <option value="">Todos</option>
+                            <option value="active_ai">🤖 IA Activa</option>
+                            <option value="pending_human">🕐 Pendiente Humano</option>
+                            <option value="active_human">🧑 Humano Activo</option>
+                            <option value="resolved">✅ Resuelto</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Desde</label>
+                        <input type="date" id="filter-date-from">
+                    </div>
+                    <div class="filter-group">
+                        <label>Hasta</label>
+                        <input type="date" id="filter-date-to">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-primary" onclick="applyFilters()">Aplicar Filtros</button>
+                    <button class="btn btn-secondary" onclick="resetFilters()">Limpiar</button>
+                    <button class="btn btn-success" onclick="exportConversations()">📥 Exportar CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversations Table -->
+        <div class="card">
+            <div class="card-header">
+                <span>📋 Conversaciones</span>
+                <span id="total-count" style="color: #6c757d; font-size: 0.9rem;">Cargando...</span>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table id="conversations-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Teléfono</th>
+                                <th>Estado</th>
+                                <th>Mensajes</th>
+                                <th>Agente</th>
+                                <th>Creado</th>
+                                <th>Actualizado</th>
+                                <th>Último Mensaje</th>
+                            </tr>
+                        </thead>
+                        <tbody id="conversations-tbody">
+                            <tr>
+                                <td colspan="8" class="loading">Cargando conversaciones...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination-container">
+                    <!-- Pagination will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation Detail Modal -->
+    <div id="conversation-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📱 Conversación #<span id="modal-conv-id">-</span></h2>
+                <div class="conversation-info">
+                    <div class="info-item">
+                        <span class="info-label">Teléfono</span>
+                        <span class="info-value" id="modal-phone">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Estado</span>
+                        <span class="info-value" id="modal-status">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Agente</span>
+                        <span class="info-value" id="modal-agent">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Creado</span>
+                        <span class="info-value" id="modal-created">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Duración</span>
+                        <span class="info-value" id="modal-duration">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Mensajes</span>
+                        <span class="info-value" id="modal-total-msgs">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Cliente</span>
+                        <span class="info-value" id="modal-customer-msgs">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">IA</span>
+                        <span class="info-value" id="modal-ai-msgs">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Humano</span>
+                        <span class="info-value" id="modal-human-msgs">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body" id="modal-messages">
+                <div class="loading">Cargando mensajes...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="closeModal()">✕ Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let perPage = 10;
+        let totalPages = 1;
+
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadConversations();
+        });
+
+        async function loadStats() {
+            try {
+                const params = new URLSearchParams();
+                const dateFrom = document.getElementById('filter-date-from').value;
+                const dateTo = document.getElementById('filter-date-to').value;
+
+                if (dateFrom) params.append('date_from', dateFrom + 'T00:00:00');
+                if (dateTo) params.append('date_to', dateTo + 'T23:59:59');
+
+                const response = await fetch(`/panel/api/reports/stats?${params}`);
+                const data = await response.json();
+
+                document.getElementById('stat-total').textContent = data.total_conversations;
+                document.getElementById('stat-ai').textContent = data.ai_only;
+                document.getElementById('stat-human').textContent = data.pending_human + data.active_human;
+                document.getElementById('stat-resolved').textContent = data.resolved;
+
+                // Calculate percentages
+                const total = data.total_conversations || 1;
+                const aiPct = ((data.ai_only / total) * 100).toFixed(1);
+                const humanPct = (((data.pending_human + data.active_human) / total) * 100).toFixed(1);
+                const resolvedPct = ((data.resolved / total) * 100).toFixed(1);
+
+                document.getElementById('stat-ai-pct').textContent = `${aiPct}%`;
+                document.getElementById('stat-human-pct').textContent = `${humanPct}%`;
+                document.getElementById('stat-resolved-pct').textContent = `${resolvedPct}%`;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadConversations(page = 1) {
+            try {
+                currentPage = page;
+
+                const params = new URLSearchParams({
+                    page: page,
+                    per_page: perPage
+                });
+
+                // Add filters
+                const phone = document.getElementById('filter-phone').value;
+                const status = document.getElementById('filter-status').value;
+                const dateFrom = document.getElementById('filter-date-from').value;
+                const dateTo = document.getElementById('filter-date-to').value;
+
+                if (phone) params.append('phone', phone);
+                if (status) params.append('status', status);
+                if (dateFrom) params.append('date_from', dateFrom + 'T00:00:00');
+                if (dateTo) params.append('date_to', dateTo + 'T23:59:59');
+
+                const response = await fetch(`/panel/api/reports/conversations?${params}`);
+                const data = await response.json();
+
+                totalPages = data.total_pages;
+
+                // Update total count
+                document.getElementById('total-count').textContent =
+                    `Mostrando ${data.conversations.length} de ${data.total_count} conversaciones`;
+
+                // Update table
+                const tbody = document.getElementById('conversations-tbody');
+                if (data.conversations.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📭</div>
+                                    <p>No se encontraron conversaciones</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    tbody.innerHTML = data.conversations.map(conv => `
+                        <tr onclick="openConversation(${conv.id})">
+                            <td>#${conv.id}</td>
+                            <td>${conv.whatsapp_number}</td>
+                            <td><span class="status-badge status-${conv.status}">${getStatusLabel(conv.status)}</span></td>
+                            <td>${conv.message_count}</td>
+                            <td>${conv.agent_name}</td>
+                            <td>${formatDateTime(conv.created_at)}</td>
+                            <td>${formatTimeAgo(conv.updated_at)}</td>
+                            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <small>${conv.last_message}</small>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Update pagination
+                updatePagination(data.page, data.total_pages);
+
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                document.getElementById('conversations-tbody').innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: red;">
+                            Error cargando conversaciones
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function updatePagination(current, total) {
+            const container = document.getElementById('pagination-container');
+            if (total <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <button onclick="loadConversations(${current - 1})" ${current <= 1 ? 'disabled' : ''}>← Anterior</button>
+            `;
+
+            // Show first page
+            if (current > 3) {
+                html += `<button onclick="loadConversations(1)">1</button>`;
+                if (current > 4) html += `<span style="padding: 0.5rem;">...</span>`;
+            }
+
+            // Show pages around current
+            for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+                html += `<button onclick="loadConversations(${i})" class="${i === current ? 'active' : ''}">${i}</button>`;
+            }
+
+            // Show last page
+            if (current < total - 2) {
+                if (current < total - 3) html += `<span style="padding: 0.5rem;">...</span>`;
+                html += `<button onclick="loadConversations(${total})">${total}</button>`;
+            }
+
+            html += `
+                <button onclick="loadConversations(${current + 1})" ${current >= total ? 'disabled' : ''}>Siguiente →</button>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        async function openConversation(conversationId) {
+            try {
+                // Show modal
+                document.getElementById('conversation-modal').style.display = 'block';
+                document.getElementById('modal-messages').innerHTML = '<div class="loading">Cargando mensajes...</div>';
+
+                const response = await fetch(`/panel/api/reports/conversations/${conversationId}`);
+                const data = await response.json();
+
+                const conv = data.conversation;
+
+                // Update header info
+                document.getElementById('modal-conv-id').textContent = conv.id;
+                document.getElementById('modal-phone').textContent = conv.whatsapp_number;
+                document.getElementById('modal-status').innerHTML =
+                    `<span class="status-badge status-${conv.status}">${getStatusLabel(conv.status)}</span>`;
+                document.getElementById('modal-agent').textContent = conv.agent_name;
+                document.getElementById('modal-created').textContent = formatDateTime(conv.created_at);
+                document.getElementById('modal-duration').textContent = formatDuration(conv.duration);
+                document.getElementById('modal-total-msgs').textContent = conv.total_messages;
+                document.getElementById('modal-customer-msgs').textContent = conv.customer_messages;
+                document.getElementById('modal-ai-msgs').textContent = conv.ai_messages;
+                document.getElementById('modal-human-msgs').textContent = conv.human_messages;
+
+                // Update messages
+                const messagesHtml = data.messages.map(msg => `
+                    <div class="message ${msg.sender_type}">
+                        <div class="message-sender">${getSenderLabel(msg.sender_type)}</div>
+                        <div class="message-text">${msg.message}</div>
+                        <div class="message-time">${formatDateTime(msg.timestamp)}</div>
+                    </div>
+                `).join('');
+
+                document.getElementById('modal-messages').innerHTML = messagesHtml;
+
+                // Scroll to bottom
+                const modalBody = document.getElementById('modal-messages');
+                modalBody.scrollTop = modalBody.scrollHeight;
+
+            } catch (error) {
+                console.error('Error opening conversation:', error);
+                alert('Error al cargar la conversación');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('conversation-modal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('conversation-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        function applyFilters() {
+            currentPage = 1;
+            loadStats();
+            loadConversations(1);
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-phone').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-date-from').value = '';
+            document.getElementById('filter-date-to').value = '';
+            applyFilters();
+        }
+
+        async function exportConversations() {
+            try {
+                const params = new URLSearchParams();
+
+                // Add same filters as current view
+                const phone = document.getElementById('filter-phone').value;
+                const status = document.getElementById('filter-status').value;
+                const dateFrom = document.getElementById('filter-date-from').value;
+                const dateTo = document.getElementById('filter-date-to').value;
+
+                if (phone) params.append('phone', phone);
+                if (status) params.append('status', status);
+                if (dateFrom) params.append('date_from', dateFrom + 'T00:00:00');
+                if (dateTo) params.append('date_to', dateTo + 'T23:59:59');
+
+                // Trigger download
+                window.location.href = `/panel/api/reports/export?${params}`;
+
+            } catch (error) {
+                console.error('Error exporting:', error);
+                alert('Error al exportar conversaciones');
+            }
+        }
+
+        // Helper functions
+        function getStatusLabel(status) {
+            const labels = {
+                'active_ai': '🤖 IA Activa',
+                'pending_human': '🕐 Pendiente',
+                'active_human': '🧑 Humano Activo',
+                'resolved': '✅ Resuelto'
+            };
+            return labels[status] || status;
+        }
+
+        function getSenderLabel(sender) {
+            const labels = {
+                'customer': '👤 Cliente',
+                'ai': '🤖 IA',
+                'human': '🧑 Agente'
+            };
+            return labels[sender] || sender;
+        }
+
+        function formatDateTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('es-PY', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatTimeAgo(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Ahora';
+            if (diffMins < 60) return `${diffMins}m`;
+            if (diffHours < 24) return `${diffHours}h`;
+            if (diffDays < 7) return `${diffDays}d`;
+            return date.toLocaleDateString('es-PY');
+        }
+
+        function formatDuration(duration) {
+            if (!duration) return 'N/A';
+
+            // Parse duration string (format: "HH:MM:SS" or "D days, HH:MM:SS")
+            const parts = duration.split(',');
+            if (parts.length > 1) {
+                return parts[0].trim(); // Return "X days"
+            }
+
+            const timeParts = duration.split(':');
+            const hours = parseInt(timeParts[0]);
+            const minutes = parseInt(timeParts[1]);
+
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            }
+            return `${minutes}m`;
+        }
+    </script>
+</body>
+</html>

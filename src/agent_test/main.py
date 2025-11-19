@@ -12,14 +12,16 @@ from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-from typing import List, Dict
-from datetime import timedelta
+from typing import List, Dict, Optional
+from datetime import timedelta, datetime
 import re
+import csv
+import io
 
 from .rag_chain import build_rag_chain
 from .database import get_db, create_tables
 from .conversation_manager import ConversationManager
-from .models import ConversationStatus, HumanAgent, AgentRole
+from .models import ConversationStatus, HumanAgent, AgentRole, Conversation, Message
 from .auth import authenticate_agent, create_access_token, get_current_agent, get_current_admin, get_password_hash, ACCESS_TOKEN_EXPIRE_MINUTES
 from .security import validate_webhook_request
 
@@ -564,6 +566,326 @@ async def toggle_agent_active(
         raise
     except Exception as e:
         logger.exception(f"❌ Error toggling agent {agent_id}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# === Reports Endpoints (Admin Only) ===
+
+@app.get("/panel/reports", response_class=HTMLResponse)
+async def reports_page(
+    request: Request,
+    current_admin: HumanAgent = Depends(get_current_admin)
+):
+    """Serve the reports page (admin only)."""
+    return templates.TemplateResponse("reports.html", {
+        "request": request,
+        "agent": current_admin
+    })
+
+@app.get("/panel/api/reports/stats")
+async def get_reports_stats(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_admin: HumanAgent = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get summary statistics for reports (admin only)."""
+    try:
+        # Build base query
+        query = db.query(Conversation)
+
+        # Apply date filters if provided
+        if date_from:
+            date_from_obj = datetime.fromisoformat(date_from)
+            query = query.filter(Conversation.created_at >= date_from_obj)
+        if date_to:
+            date_to_obj = datetime.fromisoformat(date_to)
+            query = query.filter(Conversation.created_at <= date_to_obj)
+
+        # Calculate statistics
+        total_conversations = query.count()
+        ai_only = query.filter(Conversation.status == ConversationStatus.ACTIVE_AI).count()
+        pending_human = query.filter(Conversation.status == ConversationStatus.PENDING_HUMAN).count()
+        active_human = query.filter(Conversation.status == ConversationStatus.ACTIVE_HUMAN).count()
+        resolved = query.filter(Conversation.status == ConversationStatus.RESOLVED).count()
+
+        return JSONResponse(content={
+            "total_conversations": total_conversations,
+            "ai_only": ai_only,
+            "pending_human": pending_human,
+            "active_human": active_human,
+            "resolved": resolved
+        })
+    except Exception as e:
+        logger.exception("❌ Error getting stats")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/panel/api/reports/conversations")
+async def get_all_conversations(
+    page: int = 1,
+    per_page: int = 10,
+    status: Optional[str] = None,
+    phone: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    current_admin: HumanAgent = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get paginated list of all conversations with filters (admin only)."""
+    try:
+        # Build base query
+        query = db.query(Conversation)
+
+        # Apply filters
+        if status:
+            try:
+                status_enum = ConversationStatus(status)
+                query = query.filter(Conversation.status == status_enum)
+            except ValueError:
+                pass  # Invalid status, ignore filter
+
+        if phone:
+            query = query.filter(Conversation.whatsapp_number.like(f"%{phone}%"))
+
+        if date_from:
+            date_from_obj = datetime.fromisoformat(date_from)
+            query = query.filter(Conversation.created_at >= date_from_obj)
+
+        if date_to:
+            date_to_obj = datetime.fromisoformat(date_to)
+            query = query.filter(Conversation.created_at <= date_to_obj)
+
+        if agent_id:
+            query = query.filter(Conversation.human_agent_id == agent_id)
+
+        # Get total count before pagination
+        total_count = query.count()
+
+        # Apply sorting (most recent first)
+        query = query.order_by(Conversation.updated_at.desc())
+
+        # Apply pagination
+        offset = (page - 1) * per_page
+        conversations = query.offset(offset).limit(per_page).all()
+
+        # Calculate total pages
+        total_pages = (total_count + per_page - 1) // per_page
+
+        # Format response
+        conversations_data = []
+        for conv in conversations:
+            # Get message count
+            message_count = db.query(Message).filter(Message.conversation_id == conv.id).count()
+
+            # Get last message
+            last_message = db.query(Message).filter(
+                Message.conversation_id == conv.id
+            ).order_by(Message.timestamp.desc()).first()
+
+            # Get agent name if applicable
+            agent_name = "AI Only"
+            if conv.human_agent_id:
+                agent = db.query(HumanAgent).filter(HumanAgent.agent_id == conv.human_agent_id).first()
+                if agent:
+                    agent_name = agent.name
+
+            conversations_data.append({
+                "id": conv.id,
+                "whatsapp_number": conv.whatsapp_number,
+                "status": conv.status.value,
+                "created_at": conv.created_at.isoformat(),
+                "updated_at": conv.updated_at.isoformat(),
+                "message_count": message_count,
+                "agent_name": agent_name,
+                "last_message": last_message.message_text[:100] if last_message else "No messages",
+                "last_message_sender": last_message.sender_type if last_message else None
+            })
+
+        return JSONResponse(content={
+            "conversations": conversations_data,
+            "total_count": total_count,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": total_pages
+        })
+    except Exception as e:
+        logger.exception("❌ Error getting conversations")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/panel/api/reports/conversations/{conversation_id}")
+async def get_conversation_details(
+    conversation_id: int,
+    current_admin: HumanAgent = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get detailed information about a specific conversation (admin only)."""
+    try:
+        # Get conversation
+        conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        # Get all messages
+        messages = db.query(Message).filter(
+            Message.conversation_id == conversation_id
+        ).order_by(Message.timestamp.asc()).all()
+
+        # Get agent info if applicable
+        agent_name = "AI Only"
+        if conversation.human_agent_id:
+            agent = db.query(HumanAgent).filter(HumanAgent.agent_id == conversation.human_agent_id).first()
+            if agent:
+                agent_name = agent.name
+
+        # Count messages by type
+        customer_messages = sum(1 for m in messages if m.sender_type == "customer")
+        ai_messages = sum(1 for m in messages if m.sender_type == "ai")
+        human_messages = sum(1 for m in messages if m.sender_type == "human")
+
+        # Calculate duration
+        duration = None
+        if messages:
+            first_msg = messages[0]
+            last_msg = messages[-1]
+            duration_delta = last_msg.timestamp - first_msg.timestamp
+            duration = str(duration_delta)
+
+        # Format messages
+        messages_data = [
+            {
+                "id": msg.id,
+                "message": msg.message_text,
+                "sender_type": msg.sender_type,
+                "timestamp": msg.timestamp.isoformat(),
+                "is_from_customer": msg.is_from_customer
+            }
+            for msg in messages
+        ]
+
+        return JSONResponse(content={
+            "conversation": {
+                "id": conversation.id,
+                "whatsapp_number": conversation.whatsapp_number,
+                "status": conversation.status.value,
+                "created_at": conversation.created_at.isoformat(),
+                "updated_at": conversation.updated_at.isoformat(),
+                "agent_name": agent_name,
+                "duration": duration,
+                "total_messages": len(messages),
+                "customer_messages": customer_messages,
+                "ai_messages": ai_messages,
+                "human_messages": human_messages
+            },
+            "messages": messages_data
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"❌ Error getting conversation {conversation_id} details")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/panel/api/reports/export")
+async def export_conversations(
+    status: Optional[str] = None,
+    phone: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    current_admin: HumanAgent = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Export conversations to CSV (admin only)."""
+    try:
+        # Build query with same filters as list endpoint
+        query = db.query(Conversation)
+
+        if status:
+            try:
+                status_enum = ConversationStatus(status)
+                query = query.filter(Conversation.status == status_enum)
+            except ValueError:
+                pass
+
+        if phone:
+            query = query.filter(Conversation.whatsapp_number.like(f"%{phone}%"))
+
+        if date_from:
+            date_from_obj = datetime.fromisoformat(date_from)
+            query = query.filter(Conversation.created_at >= date_from_obj)
+
+        if date_to:
+            date_to_obj = datetime.fromisoformat(date_to)
+            query = query.filter(Conversation.created_at <= date_to_obj)
+
+        if agent_id:
+            query = query.filter(Conversation.human_agent_id == agent_id)
+
+        conversations = query.order_by(Conversation.created_at.desc()).all()
+
+        # Create CSV in memory
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Write header
+        writer.writerow([
+            "Conversation ID",
+            "WhatsApp Number",
+            "Status",
+            "Agent",
+            "Created At",
+            "Updated At",
+            "Total Messages",
+            "Customer Messages",
+            "AI Messages",
+            "Human Messages",
+            "Last Message"
+        ])
+
+        # Write data rows
+        for conv in conversations:
+            # Get message counts
+            messages = db.query(Message).filter(Message.conversation_id == conv.id).all()
+            customer_msgs = sum(1 for m in messages if m.sender_type == "customer")
+            ai_msgs = sum(1 for m in messages if m.sender_type == "ai")
+            human_msgs = sum(1 for m in messages if m.sender_type == "human")
+
+            # Get last message
+            last_msg = messages[-1].message_text[:100] if messages else "No messages"
+
+            # Get agent name
+            agent_name = "AI Only"
+            if conv.human_agent_id:
+                agent = db.query(HumanAgent).filter(HumanAgent.agent_id == conv.human_agent_id).first()
+                if agent:
+                    agent_name = agent.name
+
+            writer.writerow([
+                conv.id,
+                conv.whatsapp_number,
+                conv.status.value,
+                agent_name,
+                conv.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                conv.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+                len(messages),
+                customer_msgs,
+                ai_msgs,
+                human_msgs,
+                last_msg
+            ])
+
+        # Prepare response
+        output.seek(0)
+        filename = f"conversations_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except Exception as e:
+        logger.exception("❌ Error exporting conversations")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
