@@ -211,6 +211,7 @@ async def whatsapp_reply(
 
     whatsapp_number = From.replace("whatsapp:", "")
     logger.info(f"📩 Received WhatsApp message from {whatsapp_number}: {Body}")
+    logger.info(f"📎 NumMedia parameter received: {NumMedia} (type: {type(NumMedia)})")
 
     # Extract media information if present
     media_urls = []
@@ -255,7 +256,9 @@ async def whatsapp_reply(
         twiml = MessagingResponse()
 
         # Check if message contains media - auto-escalate to human
+        logger.info(f"🔍 Checking media: NumMedia={NumMedia}, has media_urls={len(media_urls) > 0 if media_urls else False}")
         if NumMedia and NumMedia > 0:
+            logger.info(f"✅ Media detected! Escalating to human agent")
             # Determine media type for user-friendly message
             media_type = "archivo(s)"
             if media_urls and media_content_types:
