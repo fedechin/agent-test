@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Form, Depends, HTTPException, Request, Response as FastAPIResponse, status as http_status, BackgroundTasks
-from fastapi.responses import Response, JSONResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import Response, JSONResponse, HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +18,8 @@ import re
 import csv
 import io
 import json
+import httpx
+from urllib.parse import urlparse
 
 from .rag_chain import build_rag_chain
 from .database import get_db, create_tables
@@ -421,6 +423,49 @@ async def get_conversation_history(conversation_id: int, current_agent: HumanAge
         return JSONResponse(content={"conversation_id": conversation_id, "history": history})
     except Exception as e:
         logger.exception(f"❌ Error getting history for conversation {conversation_id}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/panel/media/proxy")
+async def proxy_media(url: str, current_agent: HumanAgent = Depends(get_current_agent)):
+    """Proxy media from Twilio with authentication."""
+    try:
+        # Validate URL is from Twilio
+        parsed_url = urlparse(url)
+        if not parsed_url.hostname or 'twilio.com' not in parsed_url.hostname:
+            raise HTTPException(status_code=400, detail="Invalid media URL")
+
+        # Fetch media from Twilio with authentication
+        twilio_account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        twilio_auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+
+        if not twilio_account_sid or not twilio_auth_token:
+            raise HTTPException(status_code=500, detail="Twilio credentials not configured")
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                url,
+                auth=(twilio_account_sid, twilio_auth_token),
+                follow_redirects=True
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch media from Twilio: {response.status_code}")
+                raise HTTPException(status_code=response.status_code, detail="Failed to fetch media")
+
+            # Return media with proper content type
+            return StreamingResponse(
+                iter([response.content]),
+                media_type=response.headers.get("content-type", "application/octet-stream"),
+                headers={
+                    "Cache-Control": "public, max-age=86400",  # Cache for 24 hours
+                }
+            )
+
+    except httpx.RequestError as e:
+        logger.exception(f"❌ Error fetching media from Twilio: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch media from Twilio")
+    except Exception as e:
+        logger.exception(f"❌ Error proxying media: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/panel/conversations/{conversation_id}/assign")

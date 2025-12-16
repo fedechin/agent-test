@@ -777,23 +777,25 @@
                             mediaHtml = '<div style="margin-top: 0.5rem;">';
                             mediaUrls.forEach((url, index) => {
                                 const contentType = mediaTypes[index] || 'unknown';
+                                // Use proxy endpoint to fetch media with authentication
+                                const proxyUrl = `/panel/media/proxy?url=${encodeURIComponent(url)}`;
 
                                 if (contentType.startsWith('image/')) {
                                     // Display images inline
-                                    mediaHtml += `<img src="${url}" style="max-width: 100%; max-height: 300px; border-radius: 5px; margin-top: 0.5rem; cursor: pointer;" onclick="window.open('${url}', '_blank')" alt="Imagen enviada">`;
+                                    mediaHtml += `<img src="${proxyUrl}" style="max-width: 100%; max-height: 300px; border-radius: 5px; margin-top: 0.5rem; cursor: pointer;" onclick="window.open('${proxyUrl}', '_blank')" alt="Imagen enviada">`;
                                 } else if (contentType.startsWith('video/')) {
                                     // Display video with player
-                                    mediaHtml += `<video controls style="max-width: 100%; max-height: 300px; border-radius: 5px; margin-top: 0.5rem;"><source src="${url}" type="${contentType}">Tu navegador no soporta videos.</video>`;
+                                    mediaHtml += `<video controls style="max-width: 100%; max-height: 300px; border-radius: 5px; margin-top: 0.5rem;"><source src="${proxyUrl}" type="${contentType}">Tu navegador no soporta videos.</video>`;
                                 } else if (contentType.startsWith('audio/')) {
                                     // Display audio player
-                                    mediaHtml += `<audio controls style="width: 100%; margin-top: 0.5rem;"><source src="${url}" type="${contentType}">Tu navegador no soporta audio.</audio>`;
+                                    mediaHtml += `<audio controls style="width: 100%; margin-top: 0.5rem;"><source src="${proxyUrl}" type="${contentType}">Tu navegador no soporta audio.</audio>`;
                                 } else {
                                     // For documents and other files, show download link
                                     const fileName = contentType.includes('pdf') ? '📄 Documento PDF' :
                                                    contentType.includes('document') || contentType.includes('word') ? '📄 Documento' :
                                                    contentType.includes('sheet') || contentType.includes('excel') ? '📊 Hoja de cálculo' :
                                                    '📎 Archivo';
-                                    mediaHtml += `<a href="${url}" target="_blank" style="display: inline-block; background: #007bff; color: white; padding: 0.5rem 1rem; border-radius: 5px; text-decoration: none; margin-top: 0.5rem;">${fileName}</a>`;
+                                    mediaHtml += `<a href="${proxyUrl}" target="_blank" style="display: inline-block; background: #007bff; color: white; padding: 0.5rem 1rem; border-radius: 5px; text-decoration: none; margin-top: 0.5rem;">${fileName}</a>`;
                                 }
                             });
                             mediaHtml += '</div>';
