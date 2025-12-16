@@ -34,10 +34,14 @@ class Message(Base):
     id = Column(Integer, primary_key=True, index=True)
     conversation_id = Column(Integer, nullable=False, index=True)
     whatsapp_number = Column(String(20), nullable=False)
-    message_text = Column(Text, nullable=False)
+    message_text = Column(Text, nullable=True)  # Nullable for media-only messages
     is_from_customer = Column(Boolean, nullable=False)
     sender_type = Column(String(20), nullable=False)  # 'customer', 'ai', 'human'
     timestamp = Column(DateTime, server_default=func.now())
+    # Media fields
+    num_media = Column(Integer, default=0, nullable=False)
+    media_urls = Column(Text, nullable=True)  # JSON array of media URLs
+    media_content_types = Column(Text, nullable=True)  # JSON array of content types (e.g., "image/jpeg")
 
 class HumanAgent(Base):
     __tablename__ = "human_agents"

@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `poetry run uvicorn src.agent_test.main:app --host 0.0.0.0 --port 8000 --reload` - Run development server with hot reload
 - `poetry run pytest` - Run tests
 - `python3 create_admin.py` - Create first admin user (run after setting up database)
-- `python3 migrate_add_role.py` - Migrate existing database to add role column (run once if upgrading)
+- `alembic upgrade head` - Apply all pending database migrations
 - `python3 test_system.py` - Run system integration tests
 
 **Docker Commands:**
@@ -40,17 +40,20 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
 4. **Context Instructions**: Agent behavior defined in `context/context.txt` for Cooperativa Multiactiva Nazareth
 5. **Conversation History**: PostgreSQL database storing all conversations and messages
 6. **Human Handover**: Automatic detection of requests for human assistance
-7. **Agent Panel**: Secure interface at `/panel` for human agents to manage conversations
-8. **Role-Based Access Control**: Admin and agent roles with restricted access to agent management features
+7. **Media Handling**: Automatic detection and storage of images, documents, videos, and audio files
+8. **Agent Panel**: Secure interface at `/panel` for human agents to manage conversations
+9. **Role-Based Access Control**: Admin and agent roles with restricted access to agent management features
 
 ### Data Flow
 1. WhatsApp message received at `/whatsapp` endpoint
 2. Conversation record created/retrieved from database
-3. Message saved to conversation history
-4. System checks if human handover is requested
-5. If AI handling: RAG chain retrieves relevant documents and generates response
-6. If human handling: Message queued for human agent in admin dashboard
-7. Response returned as TwiML for WhatsApp delivery and saved to database
+3. Media files (if present) are detected and URLs stored in database
+4. Message saved to conversation history with media information
+5. System checks if media is present or human handover is requested
+6. If media detected: Automatic escalation to human agent
+7. If AI handling: RAG chain retrieves relevant documents and generates response
+8. If human handling: Message queued for human agent in admin dashboard
+9. Response returned as TwiML for WhatsApp delivery and saved to database
 
 ## Environment Setup
 
@@ -86,8 +89,48 @@ Copy `.env.example` to `.env` and configure your values.
 - Activate/deactivate agents
 - Configure maximum concurrent conversations per agent
 
-### Database Migration
-If upgrading from a version without roles, run `python3 migrate_add_role.py` to add the role column to existing agents. The first agent will be automatically promoted to admin.
+### Database Migrations
+
+This project uses Alembic for database schema management. All migrations are version-controlled in the `alembic/versions/` directory.
+
+**Applying Migrations:**
+```bash
+alembic upgrade head
+```
+
+**Migration History:**
+1. `4bf8c2a7d7c6` - Add role column to human_agents table (Admin/Agent roles)
+2. `5c3d8f9a2b1e` - Add media fields to messages table (num_media, media_urls, media_content_types)
+
+## Media Handling
+
+The system automatically handles media files (images, documents, videos, audio) sent via WhatsApp:
+
+### Supported Media Types
+- **Images**: JPEG, PNG, GIF, WebP
+- **Documents**: PDF, DOC, DOCX, XLS, XLSX, TXT
+- **Videos**: MP4, 3GP
+- **Audio**: MP3, OGG, AMR
+
+### Automatic Behavior
+When a user sends media files:
+1. System detects media presence via Twilio's `NumMedia` parameter
+2. Media URLs and content types are extracted and stored in the database
+3. Conversation is **automatically escalated to human agent**
+4. User receives acknowledgment: "Recibí tu imagen/documento. Un agente humano lo revisará y te responderá pronto."
+5. Human agents can access media URLs from the conversation history in the admin panel
+
+### Database Storage
+Media information is stored in the `messages` table:
+- `num_media`: Number of media files attached (0 for text-only messages)
+- `media_urls`: JSON array of Twilio media URLs
+- `media_content_types`: JSON array of MIME types (e.g., "image/jpeg", "application/pdf")
+- `message_text`: Text caption or message (nullable for media-only messages)
+
+### Important Notes
+- Media files are hosted by Twilio and expire after a certain period
+- Human agents should download important media files for permanent storage
+- The AI does not process media content - all media messages go to human agents
 
 ## Domain-Specific Context
 

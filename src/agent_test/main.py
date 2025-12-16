@@ -17,6 +17,7 @@ from datetime import timedelta, datetime
 import re
 import csv
 import io
+import json
 
 from .rag_chain import build_rag_chain
 from .database import get_db, create_tables
@@ -198,8 +199,9 @@ async def startup_event():
 async def whatsapp_reply(
     request: Request,
     background_tasks: BackgroundTasks,
-    Body: str = Form(...),
+    Body: Optional[str] = Form(""),
     From: str = Form(...),
+    NumMedia: Optional[int] = Form(0),
     db: Session = Depends(get_db)
 ):
     # Validate webhook security (IP whitelist + Twilio signature)
@@ -207,6 +209,27 @@ async def whatsapp_reply(
 
     whatsapp_number = From.replace("whatsapp:", "")
     logger.info(f"📩 Received WhatsApp message from {whatsapp_number}: {Body}")
+
+    # Extract media information if present
+    media_urls = []
+    media_content_types = []
+
+    if NumMedia and NumMedia > 0:
+        logger.info(f"📎 Message contains {NumMedia} media file(s)")
+        form_data = await request.form()
+
+        for i in range(NumMedia):
+            media_url = form_data.get(f"MediaUrl{i}")
+            media_content_type = form_data.get(f"MediaContentType{i}")
+
+            if media_url:
+                media_urls.append(str(media_url))
+                media_content_types.append(str(media_content_type) if media_content_type else "unknown")
+                logger.info(f"📎 Media {i}: {media_content_type} - {media_url}")
+
+    # Convert to JSON strings for database storage
+    media_urls_json = json.dumps(media_urls) if media_urls else None
+    media_content_types_json = json.dumps(media_content_types) if media_content_types else None
 
     try:
         # Get or create conversation
@@ -218,16 +241,38 @@ async def whatsapp_reply(
             conversation.id, db, limit=CONVERSATION_HISTORY_LIMIT
         )
 
-        # Save incoming message
+        # Save incoming message with media info
         conversation_manager.save_message(
             conversation.id, whatsapp_number, Body,
-            is_from_customer=True, sender_type="customer", db=db
+            is_from_customer=True, sender_type="customer", db=db,
+            num_media=NumMedia or 0,
+            media_urls=media_urls_json,
+            media_content_types=media_content_types_json
         )
 
         twiml = MessagingResponse()
 
+        # Check if message contains media - auto-escalate to human
+        if NumMedia and NumMedia > 0:
+            # Determine media type for user-friendly message
+            media_type = "archivo(s)"
+            if media_urls and media_content_types:
+                first_type = media_content_types[0].lower()
+                if "image" in first_type:
+                    media_type = "imagen(es)" if NumMedia == 1 else "imágenes"
+                elif "video" in first_type:
+                    media_type = "video(s)"
+                elif "audio" in first_type:
+                    media_type = "audio(s)"
+                elif "pdf" in first_type or "document" in first_type:
+                    media_type = "documento(s)"
+
+            conversation_manager.request_human_takeover(conversation.id, db)
+            message = f"Recibí tu {media_type}. Un agente humano lo revisará y te responderá pronto. Por favor esperá un momento. 🧑‍💼"
+            logger.info(f"📎 Media detected - human handover requested for conversation {conversation.id}")
+
         # Check if conversation is already with human
-        if conversation.status == ConversationStatus.ACTIVE_HUMAN:
+        elif conversation.status == ConversationStatus.ACTIVE_HUMAN:
             # Forward to human agent (handled by separate system)
             # No automatic response - human agent will respond directly
             logger.info(f"🧑 Message forwarded to human agent for conversation {conversation.id}")

@@ -65,22 +65,29 @@ class ConversationManager:
 
     def save_message(self, conversation_id: int, whatsapp_number: str,
                     message_text: str, is_from_customer: bool,
-                    sender_type: str, db: Session) -> Message:
+                    sender_type: str, db: Session, num_media: int = 0,
+                    media_urls: Optional[str] = None,
+                    media_content_types: Optional[str] = None) -> Message:
         """Save message to database."""
         message = Message(
             conversation_id=conversation_id,
             whatsapp_number=whatsapp_number,
             message_text=message_text,
             is_from_customer=is_from_customer,
-            sender_type=sender_type
+            sender_type=sender_type,
+            num_media=num_media,
+            media_urls=media_urls,
+            media_content_types=media_content_types
         )
         db.add(message)
         db.commit()
         db.refresh(message)
         return message
 
-    def should_handover_to_human(self, message_text: str) -> bool:
+    def should_handover_to_human(self, message_text: Optional[str]) -> bool:
         """Check if message indicates customer wants to speak to human."""
+        if not message_text:
+            return False
         message_lower = message_text.lower()
         return any(keyword in message_lower for keyword in self.human_takeover_keywords)
 
@@ -115,7 +122,10 @@ class ConversationManager:
                 "message": msg.message_text,
                 "sender_type": msg.sender_type,
                 "is_from_customer": msg.is_from_customer,
-                "timestamp": msg.timestamp.isoformat()
+                "timestamp": msg.timestamp.isoformat(),
+                "num_media": msg.num_media,
+                "media_urls": msg.media_urls,
+                "media_content_types": msg.media_content_types
             }
             for msg in reversed(messages)
         ]
