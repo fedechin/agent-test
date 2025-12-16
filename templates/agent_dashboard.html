@@ -791,11 +791,24 @@
                                     mediaHtml += `<audio controls style="width: 100%; margin-top: 0.5rem;"><source src="${proxyUrl}" type="${contentType}">Tu navegador no soporta audio.</audio>`;
                                 } else {
                                     // For documents and other files, show download link
-                                    const fileName = contentType.includes('pdf') ? '📄 Documento PDF' :
-                                                   contentType.includes('document') || contentType.includes('word') ? '📄 Documento' :
-                                                   contentType.includes('sheet') || contentType.includes('excel') ? '📊 Hoja de cálculo' :
-                                                   '📎 Archivo';
-                                    mediaHtml += `<a href="${proxyUrl}" target="_blank" style="display: inline-block; background: #007bff; color: white; padding: 0.5rem 1rem; border-radius: 5px; text-decoration: none; margin-top: 0.5rem;">${fileName}</a>`;
+                                    let fileIcon = '📎';
+                                    let fileType = 'Archivo';
+
+                                    if (contentType.includes('pdf')) {
+                                        fileIcon = '📄';
+                                        fileType = 'PDF';
+                                    } else if (contentType.includes('document') || contentType.includes('word')) {
+                                        fileIcon = '📄';
+                                        fileType = 'Documento';
+                                    } else if (contentType.includes('sheet') || contentType.includes('excel')) {
+                                        fileIcon = '📊';
+                                        fileType = 'Hoja de cálculo';
+                                    } else if (contentType.includes('text')) {
+                                        fileIcon = '📝';
+                                        fileType = 'Archivo de texto';
+                                    }
+
+                                    mediaHtml += `<a href="${proxyUrl}" download target="_blank" style="display: block; background: #007bff; color: white; padding: 0.75rem 1rem; border-radius: 5px; text-decoration: none; margin-top: 0.5rem; text-align: center; font-weight: 600;">${fileIcon} Descargar ${fileType}</a>`;
                                 }
                             });
                             mediaHtml += '</div>';
