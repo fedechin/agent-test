@@ -268,6 +268,25 @@ async def whatsapp_reply(
                         elif MessageType == 'audio':
                             media_content_types.append('audio/ogg')
 
+        # If no media URL found in form data, try fetching from Twilio API
+        if not media_urls and twilio_client:
+            try:
+                message_sid = form_data.get('MessageSid')
+                if message_sid:
+                    logger.info(f"📎 Attempting to fetch media from Twilio API for MessageSid: {message_sid}")
+                    message = twilio_client.messages(message_sid).fetch()
+
+                    # Get media URLs from the message
+                    if message.num_media and int(message.num_media) > 0:
+                        media_list = twilio_client.messages(message_sid).media.list()
+                        for media in media_list:
+                            media_url = f"https://api.twilio.com{media.uri.replace('.json', '')}"
+                            media_urls.append(media_url)
+                            media_content_types.append(media.content_type or 'application/octet-stream')
+                            logger.info(f"📎 Retrieved media from API: {media.content_type} - {media_url}")
+            except Exception as e:
+                logger.error(f"❌ Error fetching media from Twilio API: {e}")
+
     # Convert to JSON strings for database storage
     media_urls_json = json.dumps(media_urls) if media_urls else None
     media_content_types_json = json.dumps(media_content_types) if media_content_types else None
