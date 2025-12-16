@@ -213,13 +213,16 @@ async def whatsapp_reply(
     logger.info(f"📩 Received WhatsApp message from {whatsapp_number}: {Body}")
     logger.info(f"📎 NumMedia parameter received: {NumMedia} (type: {type(NumMedia)})")
 
+    # DEBUG: Log ALL form parameters to see what Twilio is sending
+    form_data = await request.form()
+    logger.info(f"🔍 ALL FORM PARAMETERS: {dict(form_data)}")
+
     # Extract media information if present
     media_urls = []
     media_content_types = []
 
     if NumMedia and NumMedia > 0:
         logger.info(f"📎 Message contains {NumMedia} media file(s)")
-        form_data = await request.form()
 
         for i in range(NumMedia):
             media_url = form_data.get(f"MediaUrl{i}")
