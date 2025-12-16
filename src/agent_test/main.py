@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import sys
 from typing import List, Dict, Optional
 from datetime import timedelta, datetime
 import re
@@ -37,14 +38,20 @@ os.makedirs(LOG_DIR, exist_ok=True)
 logger = logging.getLogger("rag_agent")
 logger.setLevel(logging.INFO)
 
-handler = RotatingFileHandler(
+# File handler
+file_handler = RotatingFileHandler(
     filename=f"{LOG_DIR}/rag_agent.log",
     maxBytes=5_000_000,
     backupCount=5
 )
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# Console handler for Railway/Docker logs
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 # === FastAPI App ===
 app = FastAPI(title="Cooperativa Nazareth RAG Agent", description="RAG agent for Cooperativa Multiactiva Nazareth with human handover")
