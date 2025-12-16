@@ -211,6 +211,7 @@ async def whatsapp_reply(
     Body: Optional[str] = Form(""),
     From: str = Form(...),
     NumMedia: Optional[int] = Form(0),
+    MessageType: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     # Validate webhook security (IP whitelist + Twilio signature)
@@ -218,18 +219,20 @@ async def whatsapp_reply(
 
     whatsapp_number = From.replace("whatsapp:", "")
     logger.info(f"📩 Received WhatsApp message from {whatsapp_number}: {Body}")
-    logger.info(f"📎 NumMedia parameter received: {NumMedia} (type: {type(NumMedia)})")
+    logger.info(f"📎 NumMedia: {NumMedia}, MessageType: {MessageType}")
 
-    # DEBUG: Log ALL form parameters to see what Twilio is sending
+    # Get form data for media extraction
     form_data = await request.form()
-    logger.info(f"🔍 ALL FORM PARAMETERS: {dict(form_data)}")
 
     # Extract media information if present
     media_urls = []
     media_content_types = []
+    has_media = False
 
+    # Check for standard media (images, videos with NumMedia)
     if NumMedia and NumMedia > 0:
-        logger.info(f"📎 Message contains {NumMedia} media file(s)")
+        logger.info(f"📎 Message contains {NumMedia} media file(s) via NumMedia")
+        has_media = True
 
         for i in range(NumMedia):
             media_url = form_data.get(f"MediaUrl{i}")
@@ -240,9 +243,37 @@ async def whatsapp_reply(
                 media_content_types.append(str(media_content_type) if media_content_type else "unknown")
                 logger.info(f"📎 Media {i}: {media_content_type} - {media_url}")
 
+    # Check for documents and other media types via MessageType
+    # WhatsApp sends documents with MessageType='document' but NumMedia=0
+    if MessageType and MessageType in ['document', 'image', 'video', 'audio']:
+        logger.info(f"📎 MessageType indicates media: {MessageType}")
+        has_media = True
+
+        # For documents, Twilio may provide the URL in different fields
+        # Try to find media URL in form data
+        for key in form_data.keys():
+            if 'MediaUrl' in key or 'DocumentUrl' in key or 'Url' in key:
+                url_value = form_data.get(key)
+                if url_value and str(url_value).startswith('http'):
+                    logger.info(f"📎 Found media URL in {key}: {url_value}")
+                    if str(url_value) not in media_urls:
+                        media_urls.append(str(url_value))
+                        # Infer content type from MessageType if not already set
+                        if MessageType == 'document':
+                            media_content_types.append('application/octet-stream')
+                        elif MessageType == 'image':
+                            media_content_types.append('image/jpeg')
+                        elif MessageType == 'video':
+                            media_content_types.append('video/mp4')
+                        elif MessageType == 'audio':
+                            media_content_types.append('audio/ogg')
+
     # Convert to JSON strings for database storage
     media_urls_json = json.dumps(media_urls) if media_urls else None
     media_content_types_json = json.dumps(media_content_types) if media_content_types else None
+    actual_media_count = len(media_urls)
+
+    logger.info(f"📎 Media summary: has_media={has_media}, media_count={actual_media_count}, urls={len(media_urls)}")
 
     try:
         # Get or create conversation
@@ -258,7 +289,7 @@ async def whatsapp_reply(
         conversation_manager.save_message(
             conversation.id, whatsapp_number, Body,
             is_from_customer=True, sender_type="customer", db=db,
-            num_media=NumMedia or 0,
+            num_media=actual_media_count,
             media_urls=media_urls_json,
             media_content_types=media_content_types_json
         )
@@ -266,20 +297,30 @@ async def whatsapp_reply(
         twiml = MessagingResponse()
 
         # Check if message contains media - auto-escalate to human
-        logger.info(f"🔍 Checking media: NumMedia={NumMedia}, has media_urls={len(media_urls) > 0 if media_urls else False}")
-        if NumMedia and NumMedia > 0:
+        if has_media:
             logger.info(f"✅ Media detected! Escalating to human agent")
             # Determine media type for user-friendly message
             media_type = "archivo(s)"
-            if media_urls and media_content_types:
+
+            # Use MessageType first if available, otherwise use content type
+            if MessageType:
+                if MessageType == 'image':
+                    media_type = "imagen(es)"
+                elif MessageType == 'video':
+                    media_type = "video(s)"
+                elif MessageType == 'audio':
+                    media_type = "audio(s)"
+                elif MessageType == 'document':
+                    media_type = "documento(s)"
+            elif media_content_types:
                 first_type = media_content_types[0].lower()
                 if "image" in first_type:
-                    media_type = "imagen(es)" if NumMedia == 1 else "imágenes"
+                    media_type = "imagen(es)"
                 elif "video" in first_type:
                     media_type = "video(s)"
                 elif "audio" in first_type:
                     media_type = "audio(s)"
-                elif "pdf" in first_type or "document" in first_type:
+                elif "pdf" in first_type or "document" in first_type or "octet-stream" in first_type:
                     media_type = "documento(s)"
 
             conversation_manager.request_human_takeover(conversation.id, db)
