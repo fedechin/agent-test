@@ -768,6 +768,17 @@
                 messagesContainer.innerHTML = data.history.map(msg => {
                     let mediaHtml = '';
 
+                    // Debug logging
+                    if (msg.message_text && (msg.message_text.includes('docs.txt') || msg.message_text.includes('.pdf') || msg.message_text.includes('.doc'))) {
+                        console.log('Message with potential media:', {
+                            text: msg.message_text,
+                            num_media: msg.num_media,
+                            has_urls: !!msg.media_urls,
+                            media_urls: msg.media_urls,
+                            media_types: msg.media_content_types
+                        });
+                    }
+
                     // Check if message has media
                     if (msg.num_media && msg.num_media > 0 && msg.media_urls) {
                         try {
