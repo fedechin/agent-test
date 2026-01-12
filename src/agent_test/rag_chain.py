@@ -31,7 +31,7 @@ def load_documents():
         # Remove BOM and normalize the text
         doc.page_content = doc.page_content.encode('utf-8').decode('utf-8-sig').strip()
         
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=150)
     return splitter.split_documents(raw_docs)
 
 def build_or_load_vectorstore():
@@ -57,7 +57,7 @@ def load_context(context_path=CONTEXT_PATH):
 # === Custom RAG Chain ===
 def build_rag_chain(context_path=CONTEXT_PATH, model_name="gpt-4o-mini"):
     vectorstore = build_or_load_vectorstore()
-    retriever = vectorstore.as_retriever()
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
     context = load_context(context_path)
 
     system_prompt = SystemMessagePromptTemplate.from_template(

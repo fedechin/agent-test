@@ -7,22 +7,25 @@ BASE DE CONOCIMIENTO (BC) - COOPERATIVA NAZARETH
 
 # BENEFICIOS SOCIALES
 
-La Cooperativa Nazareth brinda beneficios sociales a sus socios como apoyo solidario en distintas etapas y situaciones de la vida, conforme a los reglamentos internos vigentes.
+## Resumen de Beneficios Sociales
+La Cooperativa Nazareth brinda beneficios sociales a sus socios como apoyo solidario en distintas etapas y situaciones de la vida. Los beneficios disponibles incluyen: Aniversario de Bodas (25, 30, 40, 50, 60, 70 y 75 años), Asistencia a la Tercera Edad, Compra de Anteojos, Egreso Universitario, Internación, Matrimonio, Nacimiento, Traslado en Ambulancia, y Fallecimiento (del socio, padre, cónyuge o hijo). Cada beneficio tiene requisitos específicos de antigüedad (1 a 15 años según el caso) y plazos de presentación (generalmente 90 días desde el evento). Todos requieren estar al día con las obligaciones societarias.
 
-## Aniversario de Bodas
+## Detalle de Beneficios Sociales
+
+### Aniversario de Bodas
 - 25, 30, 40, 50, 60, 70 y 75 años.
 - 5 años de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Certificado de Matrimonio o Libreta de Familia del Registro Civil.
 - Plazo: 90 días (a partir de la fecha del evento).
 
-## Asistencia a la Tercera Edad
+### Asistencia a la Tercera Edad
 - Tener 65 años cumplidos.
 - 15 años (mínimo) de antigüedad como Socio.
 - Pago sistemático de obligaciones en los últimos 6 meses.
 - Estar al día a la fecha de la presentación.
 
-## Compra de Anteojos
+### Compra de Anteojos
 - 3 años de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Recibo o factura legal de compra del anteojo.
@@ -30,38 +33,38 @@ La Cooperativa Nazareth brinda beneficios sociales a sus socios como apoyo solid
 - Socios hasta 55 años de edad pueden solicitar el beneficio cada 2 años.
 - Desde 56 años en adelante, pueden solicitar el beneficio cada 1 año.
 
-## Egreso Universitario
+### Egreso Universitario
 - 3 años de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Copia de Título o Certificado de Estudios.
 - Plazo: 1 año (a partir de la fecha del evento).
 
-## Internación
+### Internación
 - 1 año de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Constancia médica, donde indique fecha y motivo de internación.
 - Plazo: 90 días (a partir de la fecha del evento).
 
-## Matrimonio
+### Matrimonio
 - 1 año de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Certificado de Matrimonio o Libreta de Familia del Registro Civil.
 - Plazo: 90 días (a partir de la fecha del evento).
 
-## Nacimiento
+### Nacimiento
 - 1 año de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Certificado de Nacimiento expedido por el Registro Civil de las Personas.
 - Plazo: 90 días (a partir de la fecha del evento).
 - En caso de parto quirúrgico, presentar constancia médica de la cesárea practicada.
 
-## Traslado en Ambulancia
+### Traslado en Ambulancia
 - 1 año de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Factura legal a nombre del Socio.
 - Plazo: 90 días (a partir de la fecha del evento).
 
-## Fallecimiento del Socio
+### Fallecimiento del Socio
 - 1 año de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Certificado de Defunción.
@@ -69,7 +72,7 @@ La Cooperativa Nazareth brinda beneficios sociales a sus socios como apoyo solid
 - Documentos legales que respalden dichos gastos.
 - Plazo: 90 días (a partir de la fecha del evento).
 
-## Fallecimiento de Padre
+### Fallecimiento de Padre
 - 1 año de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Certificado de Defunción del Padre.
@@ -77,7 +80,7 @@ La Cooperativa Nazareth brinda beneficios sociales a sus socios como apoyo solid
 - Certificado de Nacimiento del hijo Socio.
 - Plazo: 90 días (a partir de la fecha del evento).
 
-## Fallecimiento de Cónyuge
+### Fallecimiento de Cónyuge
 - 1 año de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
 - Certificado de Defunción del Cónyuge.
@@ -85,7 +88,7 @@ La Cooperativa Nazareth brinda beneficios sociales a sus socios como apoyo solid
 - Certificado de Matrimonio o Libreta de Familia expedida por el Registro Civil.
 - Plazo: 90 días (a partir de la fecha del evento).
 
-## Fallecimiento de Hijo
+### Fallecimiento de Hijo
 - Menores de 18 años, o mayor con capacidad diferente.
 - 1 año de antigüedad como Socio.
 - Estar al día a la fecha del evento y presentación.
@@ -97,7 +100,10 @@ La Cooperativa Nazareth brinda beneficios sociales a sus socios como apoyo solid
 
 # CENTRO MÉDICO
 
-La Cooperativa Nazareth cuenta con un Centro Médico que brinda atención con costos diferenciados para socios y no socios.
+## Resumen del Centro Médico
+La Cooperativa Nazareth cuenta con un Centro Médico que brinda atención con costos diferenciados para socios y no socios. El Centro Médico ofrece 12 especialidades médicas: Clínica Médica, Endocrinología, Fonoaudiología, Ginecología, Mastología, Nutrición, Odontología, Pediatría, Nefrología, Psicopedagogía, Traumatología y Urología. Los costos para socios van desde Gs. 40.000 hasta Gs. 80.000 según la especialidad. Para no socios, los costos van desde Gs. 60.000 hasta Gs. 120.000. Todas las atenciones requieren reserva previa de turnos. Los horarios de atención varían según la especialidad, de lunes a sábado.
+
+## Detalle de Especialidades del Centro Médico
 
 ### Clínica Médica
 DÍA        | DESDE     | HASTA     | ESPECIALIDAD     | PROFESIONAL           | COSTO SOCIO | COSTO NO SOCIO
@@ -170,7 +176,7 @@ DÍA      | DESDE     | HASTA     | ESPECIALIDAD | PROFESIONAL             | COS
 ---------|-----------|-----------|--------------|--------------------------|-------------|----------------
 Sábado   | 08:30 hs. | 11:00 hs. | Urología     | Dra. Amanda González     | Gs. 80.000  | Gs. 120.000
 
-### Observaciones Importantes
+### Observaciones Importantes del Centro Médico
 - Odontología: Los tratamientos tienen costo. Consulta gratuita para Socios en caso de iniciar tratamiento.
 - Para todas las especialidades las atenciones serán solo con reserva previa de turnos.
 - Se deberá cumplir el horario según la reserva realizada, caso contrario se podrá ceder el turno.
@@ -179,15 +185,15 @@ Sábado   | 08:30 hs. | 11:00 hs. | Urología     | Dra. Amanda González     | 
 
 # SUBSIDIOS
 
-La Cooperativa Nazareth otorga subsidios a sus socios como apoyo solidario ante acontecimientos familiares, educativos y de salud, conforme a los reglamentos internos vigentes.
+## Resumen de Subsidios
+La Cooperativa Nazareth otorga subsidios monetarios a sus socios como apoyo solidario ante acontecimientos familiares, educativos y de salud. Los tipos de subsidios incluyen: Nacimiento (Gs. 500.000 - 750.000), Matrimonio (Gs. 600.000), Aniversarios de Bodas (Gs. 600.000 - 2.200.000 según los años), Egreso Educativo (Gs. 500.000 - 1.200.000 según nivel), Fallecimiento (Gs. 550.000 - 2.500.000 según parentesco), Internación (Gs. 120.000 - 240.000 por día hasta 10 días), Asistencia a la Salud (Gs. 600.000 - 3.000.000 según complejidad), Compra de Anteojos (Gs. 170.000), Fisioterapia (Gs. 100.000 por sesión), Odontología (Gs. 100.000), Traslado en Ambulancia (Gs. 250.000 - 300.000), y Asistencia a la Tercera Edad (Gs. 1.200.000 - 2.500.000 según antigüedad). Todos los subsidios requieren antigüedad mínima (1-5 años según el tipo), estar al día con obligaciones y presentar documentación respaldatoria dentro de los plazos establecidos.
 
-Los subsidios están sujetos al cumplimiento de la antigüedad mínima requerida, estar al día con las obligaciones societarias y a la presentación de la documentación correspondiente dentro de los plazos establecidos.
+## Tabla Detallada de Subsidios
 
-### Tabla de Subsidios
 TIPO DE SUBSIDIO | ANTIGÜEDAD | MONTO (Gs.)
 ----------------|------------|-------------
 Nacimiento parto normal o adopción plena. | 1 año | 500.000
-Nacimiento parto guirúgico. | 1 año | 750.000
+Nacimiento parto quirúrgico. | 1 año | 750.000
 Matrimonio | 1 año | 600.000
 Aniversario de bodas de Plata 25 años | 5 años | 600.000
 Aniversario de bodas de Plata 25 años (2 socios) | 5 años | 500.000
@@ -212,7 +218,7 @@ Fallecimiento del socio | 1 año | 2.500.000
 Fallecimiento del cónyuge | 1 año | 1.350.000
 Fallecimiento de hijo menor de 18 años y nacido vivo hasta 8 días. | 1 año | 850.000
 Fallecimiento de hijo con capacidad diferente o limitada (no socio) | 1 año | 700.000
-Fallecimiento simúltaneo hasta 2 hijos | 1 año | 550.000
+Fallecimiento simultáneo hasta 2 hijos | 1 año | 550.000
 Fallecimiento de padre/madre | 1 año | 850.000
 Fallecimiento de padres (varios socios) | 1 año | 1.600.000
 Sala de internados del socio hasta 10 días. | 1 año | 120.000
@@ -247,7 +253,8 @@ Asistencia a la tercera edad a partir de los 26 años en adelante | – | 2.500.
 
 ## NAZARETH COUNTRY CLUB
 
-Disfrute en familia de las instalaciones del Nazareth Country Club, para ingresar solo debes estar al día con tus obligaciones societarias.
+## Resumen del Country Club
+El Nazareth Country Club es la sede social de la Cooperativa ubicada en Villeta. Las instalaciones incluyen 3 piscinas, canchas de volley, fútbol, parque infantil y quinchos. Pueden acceder los socios al día con sus obligaciones, junto con sus beneficiarios: padres mayores de 65 años, cónyuge, hijos menores y mini socios. Se requiere carnet de socio y beneficiarios. La inspección médica tiene un costo de Gs. 15.000 para adultos, Gs. 10.000 para menores hasta 18 años, y Gs. 5.000 para mini socios. Los no socios pueden acceder con un costo de Gs. 100.000 (adultos) o Gs. 20.000 (menores hasta 17 años).
 
 ### Instalaciones
 - 3 piscinas
@@ -290,7 +297,8 @@ https://www.nazareth.com.py/country.php
 
 # SALONES DE EVENTOS
 
-La Cooperativa Nazareth pone a disposición de sus socios distintos salones para la realización de eventos, sujetos a disponibilidad y a las normas internas vigentes.
+## Resumen de Salones de Eventos
+La Cooperativa Nazareth pone a disposición de sus socios 3 salones para eventos: Salón Socios Fundadores (150-180 personas, Gs. 1.000.000), Salón Eliodoro González A. (120-150 personas, Gs. 700.000), y Salón V.I.P. Sucursal Nº 1 en Lambaré (80 personas, Gs. 600.000). Todos incluyen salón climatizado y estacionamiento. Los horarios de uso son de 12:00 a 01:00 hs (domingo a jueves) y de 12:00 a 02:00 hs (viernes, sábado o víspera de feriado). Se requiere pago del 50% dentro de 48 horas de aprobación y el saldo 15 días antes del evento. Se cobra garantía de limpieza (Gs. 200.000) y garantía de retiro de enseres (Gs. 300.000, reembolsable si se cumple el horario).
 
 ### Salón Socios Fundadores (Ex Casa Central)
 Capacidad: 150 a 180 personas.

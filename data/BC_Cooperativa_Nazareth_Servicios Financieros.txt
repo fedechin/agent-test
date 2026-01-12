@@ -1,20 +1,23 @@
-# SERVICIOS
-##FINANCIEROS ##CREDITOS ##AHORROS ##TARJETAS ##SERVICIOS DIGITALES ##CAJAS ALTERNATIVAS
+# SERVICIOS FINANCIEROS - COOPERATIVA NAZARETH
+## CREDITOS ## AHORROS ## TARJETAS ## SERVICIOS DIGITALES ## CAJAS ALTERNATIVAS
 
-## FINANCIEROS
+# Resumen General de Servicios Financieros
+La Cooperativa Nazareth ofrece servicios financieros completos: Créditos (Ordinario hasta Gs. 100.000.000, Vehicular hasta 60 meses, MYPES, Vivienda, y otros especiales), Ahorros (a la Vista 0.75% anual, Plazo Fijo desde 4.60% hasta 9.85% según monto y plazo, Infantil hasta 11.25%), Tarjetas de Crédito (VISA, CREDICARD, CABAL Clásica y Salud) y Débito (Única Online, Prepaga, Pre-Cooperativa Juvenil), Servicios Digitales (WebCoop, Homebanking, Nazareth Online), y Cajas Alternativas con horarios extendidos incluyendo fines de semana.
 
-##CREDITO
 
-Recuerda que con nuestros créditos buscamos mejorar tu calidad de vida y cumplir tus proyectos, por lo que es importante el pago puntual de las cuotas para seguir creciendo juntos.
+# CRÉDITOS
 
-### Tipos de Créditos
+## Resumen de Créditos
+La Cooperativa Nazareth ofrece diversos tipos de créditos para mejorar la calidad de vida de sus socios: Crédito Ordinario (hasta Gs. 100.000.000, socios categoría A gozan de 1% menos de interés), Crédito Vehicular "Olvídate del Ómnibus" (hasta Gs. 100.000.000, plazo máximo 60 meses), Crédito MYPES para microempresarios con atención personalizada, Crédito Vivienda "Casa Propia" para compra, refacción o ampliación con plazos y tasas especiales. También se ofrecen créditos Escolar, Capacitación, Salud, Promocionales, Pre-Cooperativa y Descuento de Cheques. Es importante el pago puntual de cuotas. Simulador disponible en https://www.nazareth.com.py/simuladores.php
+
+## Tipos de Créditos
 
 ### Crédito Ordinario
 Los montos máximos dependen de la capacidad de pago.
 Monto máximo: hasta Gs. 100.000.000.
-Los socios categoría “A – Excelente” gozan del 1% menos de interés.
+Los socios categoría "A – Excelente" gozan del 1% menos de interés.
 
-### Crédito Vehicular – “Olvídate del Ómnibus”
+### Crédito Vehicular – "Olvídate del Ómnibus"
 Ahorrá tiempo y dinero, comprá tu propio vehículo.
 Solicitá tu crédito hasta Gs. 100.000.000 en un plazo máximo de 60 meses.
 
@@ -43,7 +46,6 @@ Asóciate y solicitá tu crédito, a plazos y tasas especiales.
 Estando al día con tus obligaciones societarias, accedés a todos los servicios.
 
 ### Simulador de Créditos
-
 Herramienta que permite estimar de forma referencial:
 - Monto del crédito
 - Plazo
@@ -57,7 +59,12 @@ https://www.nazareth.com.py/simuladores.php
 
 ---
 
-## AHORROS
+# AHORROS
+
+## Resumen de Productos de Ahorro
+La Cooperativa Nazareth ofrece diversos productos de ahorro: Ahorro a la Vista (0.75% anual, capitalización trimestral, apertura desde Gs. 54.670), Ahorro a Plazo Fijo (tasas desde 4.60% hasta 9.85% según monto y plazo, acreditación mensual de intereses, plazos de 360 a 1800 días), Ahorro Previo Programado (capitalización mensual), Ahorro Infantil para menores de 18 años (tasas desde 6.05% hasta 11.25% según edad, a menor edad mayor tasa), y Ahorro Infanto Juvenil a 15 años (tasas desde 5.15% hasta 9.25% según edad).
+
+## Detalle de Productos de Ahorro
 
 ### Ahorro a la Vista
 
@@ -111,9 +118,12 @@ EDAD | TASA
 
 ---
 
-## TARJETAS
+# TARJETAS
 
-### Tarjetas de Crédito
+## Resumen de Tarjetas
+La Cooperativa Nazareth ofrece Tarjetas de Crédito: VISA (cobertura internacional con seguro al viajero), CREDICARD (cobertura nacional), CABAL Clásica (nacional y regional), y CABAL Salud (nacional y regional). Requisitos: cédula vigente, factura ANDE o ESSAP, comprobante de ingreso. También ofrece Tarjetas de Débito: Única Online, Única Prepaga, y Pre-Cooperativa Juvenil (12 a 17 años, desde Gs. 50.000). Tarjetas adicionales disponibles para mayores de 18 años vinculadas al titular.
+
+## Tarjetas de Crédito
 - VISA – Cobertura internacional, seguro al viajero
 - CREDICARD – Cobertura nacional
 - CABAL Clásica – Nacional y regional
@@ -124,17 +134,20 @@ EDAD | TASA
 - Factura ANDE o ESSAP
 - Comprobante de ingreso
 
-### Tarjetas de Débito
+## Tarjetas de Débito
 - Débito Única Online
 - Débito Única Prepaga
 - Débito Pre-Cooperativa Juvenil (12 a 17 años – desde Gs. 50.000)
 
-### Tarjetas Adicionales
+## Tarjetas Adicionales
 Para mayores de 18 años, vinculadas a tarjetas del socio titular.
 
 ---
 
-## SERVICIOS DIGITALES
+# SERVICIOS DIGITALES
+
+## Resumen de Servicios Digitales
+La Cooperativa Nazareth ofrece servicios digitales para operar las 24 horas: Consulta 24 hs (atención permanente para consultas de servicios), WebCoop (https://webcoop.nazareth.com.py/webcoop/), Homebanking para operaciones financieras en línea, y Plataforma Nazareth Online (https://online.nazareth.com.py/#!/login).
 
 ### Consulta 24 hs
 Atención permanente para consultas de servicios.
@@ -150,7 +163,12 @@ https://online.nazareth.com.py/#!/login
 
 ---
 
-## CAJAS ALTERNATIVAS
+# CAJAS ALTERNATIVAS
+
+## Resumen de Cajas Alternativas
+La Cooperativa Nazareth ofrece cajas alternativas con horarios extendidos incluyendo fines de semana. Casa Central: Lunes a Viernes 16:00-19:00, Sábado 11:00-16:00, Domingo 09:00-13:00. Sucursal Nº 1: Sábado 11:00-16:00, Domingo 09:00-13:00. Operaciones disponibles: pago de Aporte, Solidaridad, Country, INCOOP, Pre-Cooperativa, depósitos y extracciones de Ahorro a la Vista, pagos por Aquí Pago y Practipago.
+
+## Horarios de Cajas Alternativas
 
 CASA CENTRAL
 Lunes a Viernes: 16:00 a 19:00
@@ -161,7 +179,7 @@ SUCURSAL Nº 1
 Sábado: 11:00 a 16:00
 Domingo: 09:00 a 13:00
 
-### Operaciones
+### Operaciones Disponibles
 - Pago de Aporte, Solidaridad, Country, INCOOP, Pre-Cooperativa
 - Depósitos y extracciones de Ahorro a la Vista
 - Pagos por Aquí Pago y Practipago
