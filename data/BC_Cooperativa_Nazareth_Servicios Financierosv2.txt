@@ -2,13 +2,15 @@
 ## CREDITOS ## AHORROS ## TARJETAS ## SERVICIOS DIGITALES ## CAJAS ALTERNATIVAS
 
 # Resumen General de Servicios Financieros
-La Cooperativa Nazareth ofrece servicios financieros completos: Créditos (Ordinario hasta Gs. 100.000.000, Vehicular hasta 60 meses, MYPES, Vivienda, y otros especiales), Ahorros (a la Vista 0.75% anual, Plazo Fijo desde 4.60% hasta 9.85% según monto y plazo, Infantil hasta 11.25%), Tarjetas de Crédito (VISA, CREDICARD, CABAL Clásica y Salud) y Débito (Única Online, Prepaga, Pre-Cooperativa Juvenil), Servicios Digitales (WebCoop, Homebanking, Nazareth Online), y Cajas Alternativas con horarios extendidos incluyendo fines de semana.
+La Cooperativa Nazareth ofrece servicios financieros completos: Créditos (Ordinario hasta Gs. 100.000.000, Vehicular hasta 60 meses, MYPES, Vivienda, y otros especiales), Ahorros (a la Vista 0.75% anual, Plazo Fijo desde 4.60% hasta 10.05% según monto, plazo y tipo de acreditación, Infantil hasta 11.25%), Tarjetas de Crédito (VISA, CREDICARD, CABAL Clásica y Salud) y Débito (Única Online, Prepaga, Pre-Cooperativa Juvenil), Servicios Digitales (WebCoop, Homebanking, Nazareth Online), y Cajas Alternativas con horarios extendidos incluyendo fines de semana.
 
 
 # CRÉDITOS
 
 ## Resumen de Créditos
 La Cooperativa Nazareth ofrece diversos tipos de créditos para mejorar la calidad de vida de sus socios: Crédito Ordinario (hasta Gs. 100.000.000, socios categoría A gozan de 1% menos de interés), Crédito Vehicular "Olvídate del Ómnibus" (hasta Gs. 100.000.000, plazo máximo 60 meses), Crédito MYPES para microempresarios con atención personalizada, Crédito Vivienda "Casa Propia" para compra, refacción o ampliación con plazos y tasas especiales. También se ofrecen créditos Escolar, Capacitación, Salud, Promocionales, Pre-Cooperativa y Descuento de Cheques. Es importante el pago puntual de cuotas. Simulador disponible en https://www.nazareth.com.py/simuladores.php
+
+Recuerda que con nuestros créditos buscamos mejorar tu calidad de vida y cumplir tus proyectos, por lo que es importante el pago puntual de las cuotas para seguir creciendo juntos.
 
 ## Tipos de Créditos
 
@@ -62,7 +64,7 @@ https://www.nazareth.com.py/simuladores.php
 # AHORROS
 
 ## Resumen de Productos de Ahorro
-La Cooperativa Nazareth ofrece diversos productos de ahorro: Ahorro a la Vista (0.75% anual, capitalización trimestral, apertura desde Gs. 54.670), Ahorro a Plazo Fijo (tasas desde 4.60% hasta 9.85% según monto y plazo, acreditación mensual de intereses, plazos de 360 a 1800 días), Ahorro Previo Programado (capitalización mensual), Ahorro Infantil para menores de 18 años (tasas desde 6.05% hasta 11.25% según edad, a menor edad mayor tasa), y Ahorro Infanto Juvenil a 15 años (tasas desde 5.15% hasta 9.25% según edad).
+La Cooperativa Nazareth ofrece diversos productos de ahorro: Ahorro a la Vista (0.75% anual, capitalización trimestral, apertura desde Gs. 54.670), Ahorro a Plazo Fijo (tasas desde 0.70% hasta 10.05% según monto, plazo y tipo de acreditación - mensual, trimestral o al vencimiento - plazos de 180 a 1800 días), Ahorro Previo Programado (capitalización mensual, plazos de 6 meses a 5 años), Ahorro Infantil para menores de 18 años (tasas desde 6.05% hasta 11.25% según edad, a menor edad mayor tasa), y Ahorro Infanto Juvenil a 15 años (tasas desde 5.15% hasta 9.25% según edad).
 
 ## Detalle de Productos de Ahorro
 
@@ -80,39 +82,70 @@ Depósito mínimo                 | Gs. 1
 
 ### Ahorro a Plazo Fijo
 
-ACREDITACIÓN MENSUAL DE INTERESES
+#### ACREDITACIÓN MENSUAL DE INTERESES
 
-MONTO (Gs.) | 360 d | 540 d | 720 d | 1080 d | 1440 d | 1800 d
-------------|-------|-------|-------|--------|--------|--------
-500.000 a 10.000.000 | 4,60% | 5,00% | 5,15% | 6,25% | 6,50% | 7,50%
-10.000.001 a 50.000.000 | 5,50% | 5,75% | 6,25% | 7,25% | 7,65% | 8,40%
-50.000.001 a 100.000.000 | 6,00% | 6,20% | 6,80% | 7,90% | 8,40% | 9,15%
-100.000.001 a 300.000.000 | 6,45% | 6,90% | 7,35% | 8,15% | 8,65% | 9,50%
-300.000.001 a 600.000.000 | 6,85% | 7,00% | 7,75% | 8,40% | 9,00% | 9,65%
-600.000.001 y más | 7,00% | 7,35% | 8,15% | 8,65% | 9,25% | 9,85%
+MONTO (Gs.)                     | 360 d  | 540 d  | 720 d  | 1080 d | 1440 d | 1800 d
+--------------------------------|--------|--------|--------|--------|--------|--------
+500.000 a 10.000.000            | 4,60%  | 5,00%  | 5,15%  | 6,25%  | 6,50%  | 7,50%
+10.000.001 a 50.000.000         | 5,50%  | 5,75%  | 6,25%  | 7,25%  | 7,65%  | 8,40%
+50.000.001 a 100.000.000        | 6,00%  | 6,20%  | 6,80%  | 7,90%  | 8,40%  | 9,15%
+100.000.001 a 300.000.000       | 6,45%  | 6,90%  | 7,35%  | 8,15%  | 8,65%  | 9,50%
+300.000.001 a 600.000.000       | 6,85%  | 7,00%  | 7,75%  | 8,40%  | 9,00%  | 9,65%
+600.000.001 y más               | 7,00%  | 7,35%  | 8,15%  | 8,65%  | 9,25%  | 9,85%
+
+#### ACREDITACIÓN TRIMESTRAL DE INTERESES
+
+MONTO (Gs.)                     | 180 d  | 360 d  | 540 d  | 720 d  | 1080 d | 1440 d | 1800 d
+--------------------------------|--------|--------|--------|--------|--------|--------|--------
+500.000 a 10.000.000            | 0,70%  | 5,00%  | 5,50%  | 5,50%  | 6,30%  | 6,65%  | 7,60%
+10.000.001 a 50.000.000         | 1,00%  | 6,15%  | 6,10%  | 6,50%  | 7,50%  | 7,85%  | 8,60%
+50.000.001 a 100.000.000        | 1,50%  | 6,50%  | 6,85%  | 7,00%  | 8,15%  | 8,60%  | 9,35%
+100.000.001 a 300.000.000       | 1,75%  | 6,75%  | 7,35%  | 7,50%  | 8,35%  | 8,65%  | 9,60%
+300.000.001 a 600.000.000       | 2,25%  | 7,05%  | 7,50%  | 8,00%  | 8,60%  | 9,10%  | 9,85%
+600.000.001 y más               | 2,75%  | 7,20%  | 8,00%  | 8,50%  | 8,80%  | 9,30%  | 10,00%
+
+#### ACREDITACIÓN AL VENCIMIENTO DEL CONTRATO
+
+MONTO (Gs.)                     | 180 d  | 360 d  | 540 d  | 720 d  | 1080 d | 1440 d | 1800 d
+--------------------------------|--------|--------|--------|--------|--------|--------|--------
+500.000 a 10.000.000            | 0,85%  | 5,10%  | 5,65%  | 5,65%  | 6,40%  | 6,70%  | 7,65%
+10.000.001 a 50.000.000         | 1,50%  | 6,25%  | 6,25%  | 6,60%  | 7,60%  | 7,90%  | 8,65%
+50.000.001 a 100.000.000        | 2,00%  | 6,60%  | 7,00%  | 7,10%  | 8,25%  | 8,65%  | 9,40%
+100.000.001 a 300.000.000       | 2,25%  | 6,85%  | 7,50%  | 7,60%  | 8,45%  | 8,80%  | 9,65%
+300.000.001 a 600.000.000       | 2,75%  | 7,15%  | 7,70%  | 8,10%  | 8,70%  | 9,15%  | 9,90%
+600.000.001 y más               | 3,25%  | 7,35%  | 8,10%  | 8,60%  | 8,90%  | 9,35%  | 10,05%
 
 ### Ahorro Previo Programado
 Capitalización mensual.
 El monto de los depósitos está sujeto a variación según fecha de apertura.
 
+MONTO OBJETIVO (Gs.) | 6 meses    | 1 año      | 1,5 años   | 2 años     | 3 años     | 4 años     | 5 años
+---------------------|------------|------------|------------|------------|------------|------------|----------
+500.000              | 82.400     | 40.450     | 26.450     | 19.300     | 12.250     | 8.600      | 6.400
+1.000.000            | 164.950    | 81.050     | 52.850     | 38.550     | 24.500     | 17.200     | 12.750
+3.000.000            | 494.800    | 243.150    | 158.550    | 115.650    | 73.450     | 51.600     | 38.250
+5.000.000            | 824.650    | 405.250    | 264.250    | 192.750    | 122.400    | 86.000     | 63.700
+8.000.000            | 1.319.450  | 648.400    | 422.800    | 308.400    | 195.800    | 137.600    | 101.950
+10.000.000           | 1.649.300  | 810.500    | 528.450    | 385.450    | 244.750    | 172.000    | 127.400
+
 ### Ahorro Infantil (hasta 18 años)
 
-EDAD | TASA
------|------
-0 a 3 | 11,25 %
-4 a 7 | 9,75 %
-8 a 11 | 8,75 %
+EDAD    | TASA
+--------|--------
+0 a 3   | 11,25 %
+4 a 7   | 9,75 %
+8 a 11  | 8,75 %
 12 a 15 | 7,50 %
 16 a 18 | 6,05 %
 
 ### Ahorro Infanto Juvenil (15 años)
 
-EDAD | TASA
------|------
-0 a 2 | 9,25 %
-3 a 4 | 8,25 %
-5 a 6 | 7,50 %
-7 a 10 | 6,90 %
+EDAD    | TASA
+--------|--------
+0 a 2   | 9,25 %
+3 a 4   | 8,25 %
+5 a 6   | 7,50 %
+7 a 10  | 6,90 %
 11 a 12 | 5,90 %
 13 a 14 | 5,15 %
 
