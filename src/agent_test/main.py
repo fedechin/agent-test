@@ -423,19 +423,23 @@ async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.post("/panel/login")
-async def login(agent_id: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+async def login(request: Request, agent_id: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     """Handle login form submission."""
     agent = authenticate_agent(agent_id, password, db)
     if not agent:
-        raise HTTPException(
-            status_code=400,
-            detail="Incorrect agent ID or password"
-        )
+        logger.warning(f"⚠️ Failed login attempt for agent_id: {agent_id}")
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "ID de agente o contraseña incorrectos"
+        })
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": agent.agent_id}, expires_delta=access_token_expires
     )
+
+    # Use secure cookies in production (when HTTPS is enabled)
+    is_production = os.getenv("ENVIRONMENT", "development").lower() == "production"
 
     response = RedirectResponse(url="/panel", status_code=302)
     response.set_cookie(
@@ -443,17 +447,18 @@ async def login(agent_id: str = Form(...), password: str = Form(...), db: Sessio
         value=access_token,
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         httponly=True,
-        secure=False  # Set to True in production with HTTPS
+        secure=is_production,
+        samesite="lax"
     )
 
     logger.info(f"✅ Agent {agent.agent_id} logged in successfully")
     return response
 
-@app.post("/panel/logout")
+@app.api_route("/panel/logout", methods=["GET", "POST"])
 async def logout():
-    """Handle logout."""
+    """Handle logout (supports both GET and POST for auto-logout and form submission)."""
     response = RedirectResponse(url="/panel/login", status_code=302)
-    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="access_token", samesite="lax")
     return response
 
 # === Human Agent Dashboard UI ===

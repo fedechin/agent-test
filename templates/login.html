@@ -107,6 +107,10 @@
             <p>Sistema de Atención al Cliente</p>
         </div>
 
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
         <form method="post" action="/panel/login">
             <div class="form-group">
                 <label for="agent_id">ID de Agente:</label>
