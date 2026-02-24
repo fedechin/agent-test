@@ -29,7 +29,7 @@ class Conversation(Base):
     id = Column(Integer, primary_key=True, index=True)
     whatsapp_number = Column(String(20), nullable=False, index=True)
     status = Column(Enum(ConversationStatus), default=ConversationStatus.ACTIVE_AI)
-    source = Column(Enum(ConversationSource), default=ConversationSource.TWILIO, nullable=False)
+    source = Column(Enum(ConversationSource, values_callable=lambda x: [e.value for e in x]), default=ConversationSource.TWILIO, nullable=False)
     yeastar_session_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
