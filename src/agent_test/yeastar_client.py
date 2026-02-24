@@ -23,7 +23,11 @@ class YeastarClient:
         self.client_secret = os.getenv("YEASTAR_CLIENT_SECRET", "")
         self.webhook_secret = os.getenv("YEASTAR_WEBHOOK_SECRET", "")
         self.transfer_destination_type = os.getenv("YEASTAR_TRANSFER_DEST_TYPE", "queue")
-        self.transfer_destination_id = int(os.getenv("YEASTAR_TRANSFER_DEST_ID", "0"))
+        try:
+            self.transfer_destination_id = int(os.getenv("YEASTAR_TRANSFER_DEST_ID", "0"))
+        except (ValueError, TypeError):
+            self.transfer_destination_id = 0
+            logger.warning("YEASTAR_TRANSFER_DEST_ID is not a valid number, defaulting to 0")
 
         self._access_token: Optional[str] = None
         self._token_expires_at: float = 0
