@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Integración: Yeastar P560 + Agente IA WhatsApp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+
+        h1 {
+            color: #1a365d;
+            font-size: 28px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #3182ce;
+        }
+
+        h2 {
+            color: #2c5282;
+            font-size: 22px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #bee3f8;
+        }
+
+        h3 {
+            color: #2b6cb0;
+            font-size: 18px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            color: #4a5568;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ul, ol {
+            margin-bottom: 15px;
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #edf2f7;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+
+        code {
+            background-color: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        pre {
+            background-color: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        blockquote {
+            background-color: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        blockquote p:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight-box {
+            background-color: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .warning-box {
+            background-color: #fffaf0;
+            border: 1px solid #fbd38d;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .info-box {
+            background-color: #ebf8ff;
+            border: 1px solid #90cdf4;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 40px 0;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .checklist li {
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .checklist li:before {
+            content: "\2610";
+            position: absolute;
+            left: 0;
+            color: #718096;
+        }
+
+        .form-field {
+            background-color: #f7fafc;
+            border: 1px dashed #cbd5e0;
+            padding: 8px 15px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .step-number {
+            display: inline-block;
+            background-color: #3182ce;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            h2 {
+                font-size: 18px;
+                page-break-after: avoid;
+            }
+
+            h3 {
+                font-size: 16px;
+                page-break-after: avoid;
+            }
+
+            pre, blockquote, table {
+                page-break-inside: avoid;
+            }
+
+            .page-break {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Guía de Integración: Yeastar P560 + Agente IA WhatsApp</h1>
+
+<h2>Resumen</h2>
+
+<p>Esta guía describe los pasos para conectar su sistema Yeastar P560 (con WhatsApp ya configurado) al agente de inteligencia artificial. El agente IA responderá automáticamente los mensajes de WhatsApp, y cuando sea necesario, transferirá la conversación a un agente humano.</p>
+
+<h3>Flujo de la Integración</h3>
+
+<pre>
+Cliente envía WhatsApp → Yeastar P560 → Agente IA → Respuesta automática
+                                              ↓
+                              (Si se requiere) → Transferencia a agente humano
+</pre>
+
+<h3>Beneficios</h3>
+
+<ul>
+    <li>Respuesta inmediata 24/7 a consultas frecuentes</li>
+    <li>Reducción de carga de trabajo para agentes humanos</li>
+    <li>Escalamiento inteligente cuando se requiere atención personalizada</li>
+    <li>Historial completo de conversaciones</li>
+</ul>
+
+<hr>
+
+<h2>Requisitos</h2>
+
+<table>
+    <tr>
+        <th>Requisito</th>
+        <th>Detalle</th>
+        <th>Cómo verificar</th>
+    </tr>
+    <tr>
+        <td><strong>Firmware</strong></td>
+        <td>Versión 37.20.0.128 o superior</td>
+        <td>Mantenimiento → Actualización</td>
+    </tr>
+    <tr>
+        <td><strong>Plan</strong></td>
+        <td>Enterprise Plan o Ultimate Plan</td>
+        <td>Información del sistema</td>
+    </tr>
+    <tr>
+        <td><strong>WhatsApp</strong></td>
+        <td>Canal de WhatsApp Business ya configurado y funcionando</td>
+        <td>Centro de Contacto → Canales</td>
+    </tr>
+</table>
+
+<div class="highlight-box">
+    <p><strong>Tiempo estimado de configuración: 10-15 minutos</strong></p>
+    <p><strong>Reversión: 30 segundos</strong> (cambiar destino de vuelta a su configuración actual)</p>
+</div>
+
+<h3>Importante: Acceso al PBX desde Internet</h3>
+
+<div class="warning-box">
+    <p>Para que el agente IA pueda enviar respuestas y transferir conversaciones, nuestro servidor necesita comunicarse con la API del PBX. Esto requiere que el PBX sea accesible desde internet.</p>
+
+    <p><strong>Opción recomendada:</strong> Si ya tienen configurado el <strong>Acceso Remoto (FQDN)</strong> de Yeastar (dirección tipo <code>xxx.ras.yeastar.com</code>), no necesitan hacer nada adicional. Simplemente proporcionen esa dirección como la URL del PBX.</p>
+
+    <p><strong>Si el PBX solo es accesible desde la red local:</strong> Necesitarán habilitar una de estas opciones:</p>
+    <ul>
+        <li><strong>Acceso Remoto Yeastar (DDNS/FQDN):</strong> Habilitarlo desde el panel del PBX en <strong>Sistema → Red → Acceso Remoto</strong>. Es la opción más sencilla y segura.</li>
+        <li><strong>Port forwarding:</strong> Abrir el puerto de la API (generalmente 8088) en su firewall/router hacia el PBX. Podemos proporcionar la IP fija de nuestro servidor para que solo permitan conexiones desde esa dirección.</li>
+    </ul>
+</div>
+
+<div class="page-break"></div>
+
+<h2><span class="step-number">1</span>Habilitar API (si no está habilitada)</h2>
+
+<ol>
+    <li>Ir a <strong>Integraciones → API</strong></li>
+    <li>Verificar que esté activada la opción <strong>"Habilitar API"</strong></li>
+    <li>Si no está habilitada, activarla</li>
+    <li>Anotar las credenciales:
+        <ul>
+            <li><strong>Client ID:</strong> <span class="form-field">_________________________</span></li>
+            <li><strong>Client Secret:</strong> <span class="form-field">_________________________</span></li>
+        </ul>
+    </li>
+</ol>
+
+<hr>
+
+<h2><span class="step-number">2</span>Configurar Webhook</h2>
+
+<ol>
+    <li>Ir a <strong>Integraciones → API → Webhook</strong></li>
+    <li>Configurar:</li>
+</ol>
+
+<table>
+    <tr>
+        <th>Campo</th>
+        <th>Valor</th>
+    </tr>
+    <tr>
+        <td>URL del Webhook</td>
+        <td><code>https://[URL-DEL-AGENTE-IA]/yeastar/webhook</code></td>
+    </tr>
+    <tr>
+        <td>Método</td>
+        <td>POST</td>
+    </tr>
+</table>
+
+<ol start="3">
+    <li><strong>Suscribirse a eventos:</strong>
+        <ul>
+            <li>✅ (30031) New Message Notification</li>
+            <li>✅ (30032) Message Sending Result</li>
+        </ul>
+    </li>
+    <li>Guardar y usar el botón <strong>"Probar Webhook"</strong> para verificar conectividad</li>
+</ol>
+
+<hr>
+
+<h2><span class="step-number">3</span>Modificar Destino del Canal WhatsApp</h2>
+
+<div class="warning-box">
+    <p><strong>Este es el único cambio que afecta el flujo actual de mensajes.</strong></p>
+</div>
+
+<ol>
+    <li>Ir a <strong>Centro de Contacto → Canales de Mensajería → WhatsApp</strong></li>
+    <li>Seleccionar el canal existente</li>
+    <li>Buscar <strong>"Destino para Mensajes Entrantes"</strong></li>
+</ol>
+
+<p><strong>Antes de cambiar, anote su configuración actual (para poder revertir):</strong></p>
+<div class="form-field">Destino actual: _________________________<br>(Cola, Extensión, u otro)</div>
+
+<p><strong>Nueva configuración:</strong></p>
+<div class="form-field">Destino: <strong>Plataforma de Terceros (Third-Party Platform)</strong></div>
+
+<ol start="4">
+    <li>Guardar los cambios</li>
+</ol>
+
+<hr>
+
+<h2><span class="step-number">4</span>Anotar ID de Cola/Extensión para Transferencias</h2>
+
+<p>Para que el agente IA pueda transferir conversaciones a humanos, necesitamos el ID de la cola o extensión donde actualmente reciben los mensajes:</p>
+
+<div class="form-field"><strong>ID de cola/extensión para transferencias:</strong> _________________________</div>
+
+<div class="page-break"></div>
+
+<h2>Verificación</h2>
+
+<h3>Prueba 1: Conectividad del Webhook</h3>
+<ul class="checklist">
+    <li>Webhook responde código 200 desde el botón de prueba de Yeastar</li>
+    <li>Logs del agente IA muestran recepción del evento de prueba</li>
+</ul>
+
+<h3>Prueba 2: Mensaje de Prueba</h3>
+<ul class="checklist">
+    <li>Enviar mensaje de WhatsApp al número configurado</li>
+    <li>Agente IA recibe el mensaje (verificar en logs)</li>
+    <li>Agente IA responde correctamente</li>
+    <li>Respuesta llega al WhatsApp del cliente</li>
+</ul>
+
+<h3>Prueba 3: Transferencia a Humano</h3>
+<ul class="checklist">
+    <li>Enviar mensaje solicitando hablar con un humano</li>
+    <li>Agente IA detecta la solicitud</li>
+    <li>Conversación aparece en la cola de agentes humanos</li>
+    <li>Agente humano puede continuar la conversación</li>
+</ul>
+
+<hr>
+
+<h2>Procedimiento de Reversión</h2>
+
+<p>Si la integración presenta problemas, se puede revertir en <strong>30 segundos</strong>:</p>
+
+<ol>
+    <li>Ir a <strong>Centro de Contacto → Canales de Mensajería → WhatsApp</strong></li>
+    <li>Cambiar <strong>"Destino para Mensajes Entrantes"</strong> de vuelta a la cola o extensión que tenían antes (la que anotó en el Paso 3)</li>
+    <li>Guardar</li>
+</ol>
+
+<div class="highlight-box">
+    <p><strong>Los mensajes volverán a llegar directamente a los agentes humanos como antes.</strong></p>
+</div>
+
+<p>Si además desean desactivar completamente la integración:</p>
+<ol>
+    <li>Ir a <strong>Integraciones → API → Webhook</strong></li>
+    <li>Eliminar la configuración del webhook</li>
+</ol>
+
+<hr>
+
+<h2>Preguntas Frecuentes</h2>
+
+<h4>¿Qué pasa si el agente IA no está disponible?</h4>
+<p>Si el webhook no responde, Yeastar reintentará según su configuración. Se puede configurar un timeout para derivar automáticamente a humanos.</p>
+
+<h4>¿Se pierden mensajes durante la transferencia?</h4>
+<p>No. El historial completo de la conversación se mantiene.</p>
+
+<h4>¿Los agentes humanos trabajan diferente?</h4>
+<p>No. Siguen usando Linkus o el panel web como siempre. Solo que ahora reciben conversaciones pre-filtradas por la IA.</p>
+
+<h4>¿Qué horario tiene el agente IA?</h4>
+<p>El agente IA está disponible 24/7. Las transferencias a humanos dependen de la disponibilidad de la cola configurada.</p>
+
+<h4>¿Podemos volver atrás?</h4>
+<p>Sí, en 30 segundos. Solo cambien el destino del canal WhatsApp de vuelta a la cola/extensión anterior.</p>
+
+<div class="page-break"></div>
+
+<h2>Checklist de Información a Proporcionar</h2>
+
+<p>Antes de comenzar, por favor complete y envíe lo siguiente:</p>
+
+<div style="background-color: #f7fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 25px; margin: 20px 0;">
+    <h3 style="margin-top: 0;">CREDENCIALES DE API</h3>
+    <p><strong>URL del PBX:</strong><br>
+    <span style="font-size: 12px; color: #718096;">(Si tienen FQDN remoto, usar esa dirección. Ej: https://miempresa.ras.yeastar.com:8088)</span><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">https://________________________________________</span></p>
+
+    <p><strong>Tipo de acceso:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">☐ FQDN remoto (xxx.ras.yeastar.com) &nbsp;&nbsp;&nbsp; ☐ IP local (requiere port forwarding)</span></p>
+
+    <p><strong>Client ID:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">________________________________________</span></p>
+
+    <p><strong>Client Secret:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">________________________________________</span></p>
+
+    <h3>CONFIGURACIÓN EXISTENTE</h3>
+    <p><strong>Nombre del canal WhatsApp:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">________________________________________</span></p>
+
+    <p><strong>Destino actual de mensajes:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">________________________________________</span></p>
+
+    <p><strong>ID de cola para transferencias:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">________________________________________</span></p>
+
+    <h3>CONTACTO TÉCNICO</h3>
+    <p><strong>Nombre:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">________________________________________</span></p>
+
+    <p><strong>Email:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">________________________________________</span></p>
+
+    <p><strong>Teléfono:</strong><br>
+    <span class="form-field" style="display: block; margin: 10px 0;">________________________________________</span></p>
+</div>
+
+<hr>
+
+<p style="text-align: center; color: #718096; font-size: 12px; margin-top: 40px;">
+    Guía de Integración Yeastar P560 + Agente IA<br>
+    Cooperativa Multiactiva Nazareth
+</p>
+
+</body>
+</html>

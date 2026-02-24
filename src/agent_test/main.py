@@ -25,9 +25,10 @@ from urllib.parse import urlparse
 from .rag_chain import build_rag_chain
 from .database import get_db, create_tables
 from .conversation_manager import ConversationManager
-from .models import ConversationStatus, HumanAgent, AgentRole, Conversation, Message
+from .models import ConversationStatus, ConversationSource, HumanAgent, AgentRole, Conversation, Message
 from .auth import authenticate_agent, create_access_token, get_current_agent, get_current_admin, get_password_hash, ACCESS_TOKEN_EXPIRE_MINUTES
 from .security import validate_webhook_request
+from .yeastar_client import YeastarClient
 
 load_dotenv()
 
@@ -75,6 +76,7 @@ app.add_middleware(
 
 # === Initialize components ===
 conversation_manager = ConversationManager()
+yeastar_client = YeastarClient()
 
 # === Configuration ===
 CONVERSATION_HISTORY_LIMIT = int(os.getenv("CONVERSATION_HISTORY_LIMIT", "10"))
@@ -415,6 +417,228 @@ async def whatsapp_reply(
 
         return Response(content=twiml_content, media_type="application/xml")
 
+# === Yeastar Webhook Endpoint ===
+
+def process_yeastar_message_background(
+    conversation_id: int,
+    whatsapp_number: str,
+    session_id: int,
+    query: str,
+    conversation_history: list,
+):
+    """Process Yeastar message in background and send response via Yeastar API."""
+    from .database import SessionLocal
+    import asyncio
+
+    db = SessionLocal()
+    try:
+        logger.info(f"Processing Yeastar message for {whatsapp_number}: {query}")
+
+        # Process with RAG chain
+        response = qa_chain.invoke({
+            "query": query,
+            "instructions": context,
+            "conversation_history": conversation_history
+        })
+        message = str(response)
+
+        logger.info(f"RAG response ready: {len(message)} characters")
+
+        # Save AI response to database
+        conversation_manager.save_message(
+            conversation_id, whatsapp_number, message,
+            is_from_customer=False, sender_type="ai", db=db
+        )
+
+        # Send message via Yeastar API
+        if yeastar_client.is_configured:
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(
+                    yeastar_client.send_message(session_id, message)
+                )
+                loop.close()
+                logger.info(f"Yeastar message sent: msg_id={result.get('msg_id')}")
+            except Exception as yeastar_error:
+                logger.error(f"Yeastar API error: {yeastar_error}")
+        else:
+            logger.warning("Yeastar client not configured - response saved to DB only")
+
+    except Exception as e:
+        logger.exception("Error processing Yeastar message in background")
+        # Try to send error message
+        if yeastar_client.is_configured:
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(
+                    yeastar_client.send_message(
+                        session_id,
+                        "Disculpe, hubo un problema procesando su consulta. Por favor intente de nuevo."
+                    )
+                )
+                loop.close()
+            except:
+                pass
+    finally:
+        db.close()
+
+
+@app.post("/yeastar/webhook")
+async def yeastar_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Receive webhook events from Yeastar P560 PBX.
+    Handles event 30031 (New Message) and 30032 (Message Sending Result).
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        logger.warning("Yeastar webhook: invalid JSON body")
+        return JSONResponse(status_code=400, content={"error": "Invalid JSON"})
+
+    event_type = body.get("type")
+    logger.info(f"Yeastar webhook event: type={event_type}")
+
+    # Validate webhook secret if configured (via query param or header)
+    token = request.query_params.get("token") or request.headers.get("X-Webhook-Token")
+    if not yeastar_client.validate_webhook(token):
+        logger.warning("Yeastar webhook: invalid token")
+        return JSONResponse(status_code=403, content={"error": "Invalid token"})
+
+    # Event 30032: Message Sending Result - just log it
+    if event_type == 30032:
+        msg = body.get("msg", {})
+        logger.info(
+            f"Yeastar send result: session={msg.get('session_id')}, "
+            f"msg_id={msg.get('msg_id')}, status={msg.get('delivery_status')}, "
+            f"error={msg.get('send_error_msg', '')}"
+        )
+        return JSONResponse(content={"status": "ok"})
+
+    # Event 30031: New Message Notification
+    if event_type == 30031:
+        msg = body.get("msg", {})
+        session_id = msg.get("session_id")
+        sender = msg.get("sender", {})
+        sender_type = sender.get("user_type")
+        sender_no = sender.get("user_no", "")
+        msg_body = msg.get("msg_body", "").strip()
+        msg_type = msg.get("msg_type")
+        msg_kind = msg.get("msg_kind", 0)
+
+        logger.info(
+            f"Yeastar new message: session={session_id}, sender={sender_no}, "
+            f"user_type={sender_type}, msg_type={msg_type}, body='{msg_body[:100]}'"
+        )
+
+        # Ignore messages from extensions (user_type=1) or from ourselves (user_type=9)
+        # Only process messages from external users (WhatsApp=3, SMS=2, Facebook=4, LiveChat=5)
+        if sender_type in (1, 9):
+            logger.info(f"Yeastar: ignoring message from internal sender (user_type={sender_type})")
+            return JSONResponse(content={"status": "ok"})
+
+        # Use sender number as identifier (clean it up)
+        whatsapp_number = sender_no.lstrip("+")
+
+        # Get or create conversation (tracked as Yeastar source)
+        conversation = conversation_manager.get_or_create_conversation(
+            whatsapp_number, db,
+            source=ConversationSource.YEASTAR,
+            yeastar_session_id=session_id
+        )
+
+        # Get conversation history before saving current message
+        conversation_history = conversation_manager.get_recent_messages_for_context(
+            conversation.id, db, limit=CONVERSATION_HISTORY_LIMIT
+        )
+
+        # Check for media (msg_type != 0 means non-text message)
+        has_media = bool(msg.get("msg_files"))
+        if msg_type and msg_type == 4:
+            # Unsupported message type
+            has_media = True
+
+        # Save incoming message
+        conversation_manager.save_message(
+            conversation.id, whatsapp_number, msg_body or "[Media]",
+            is_from_customer=True, sender_type="customer", db=db
+        )
+
+        # Handle media messages - transfer to human via Yeastar
+        if has_media:
+            logger.info(f"Yeastar: media detected, transferring session {session_id} to human queue")
+            escalation_msg = "Recibí su archivo. Un agente humano lo revisará y le responderá pronto."
+
+            conversation_manager.save_message(
+                conversation.id, whatsapp_number, escalation_msg,
+                is_from_customer=False, sender_type="ai", db=db
+            )
+
+            if yeastar_client.is_configured:
+                await yeastar_client.send_message(session_id, escalation_msg)
+                try:
+                    await yeastar_client.transfer_session(session_id)
+                    # Mark as resolved - Yeastar/Linkus handles it from here
+                    conversation_manager.end_conversation(conversation.id, db)
+                    logger.info(f"Yeastar: session {session_id} transferred to human queue")
+                except Exception as transfer_err:
+                    logger.error(f"Yeastar: transfer failed: {transfer_err}")
+
+            return JSONResponse(content={"status": "ok"})
+
+        # Handle conversation already resolved (transferred to Yeastar human queue)
+        if conversation.status == ConversationStatus.RESOLVED:
+            logger.info(f"Yeastar: conversation {conversation.id} already resolved/transferred")
+            return JSONResponse(content={"status": "ok"})
+
+        # Check if customer wants human - transfer via Yeastar
+        if conversation_manager.should_handover_to_human(msg_body):
+            handover_msg = "Entiendo que desea hablar con una persona. Le estoy conectando con un agente humano. Por favor espere un momento."
+
+            conversation_manager.save_message(
+                conversation.id, whatsapp_number, handover_msg,
+                is_from_customer=False, sender_type="ai", db=db
+            )
+
+            if yeastar_client.is_configured:
+                await yeastar_client.send_message(session_id, handover_msg)
+                try:
+                    await yeastar_client.transfer_session(session_id)
+                    # Mark as resolved - Yeastar/Linkus handles it from here
+                    conversation_manager.end_conversation(conversation.id, db)
+                    logger.info(f"Yeastar: session {session_id} transferred for human handover")
+                except Exception as transfer_err:
+                    logger.error(f"Yeastar: transfer failed: {transfer_err}")
+
+            return JSONResponse(content={"status": "ok"})
+
+        # No message body - nothing to process
+        if not msg_body:
+            logger.info("Yeastar: empty message body, skipping AI processing")
+            return JSONResponse(content={"status": "ok"})
+
+        # Process with AI in background (RAG queries can take time)
+        background_tasks.add_task(
+            process_yeastar_message_background,
+            conversation.id,
+            whatsapp_number,
+            session_id,
+            msg_body,
+            conversation_history
+        )
+
+        return JSONResponse(content={"status": "ok"})
+
+    # Unknown event type - acknowledge anyway
+    logger.info(f"Yeastar webhook: unhandled event type {event_type}")
+    return JSONResponse(content={"status": "ok"})
+
+
 # === Authentication Endpoints ===
 
 @app.get("/panel/login", response_class=HTMLResponse)
@@ -584,7 +808,7 @@ async def send_human_message(
             is_from_customer=False, sender_type="human", db=db
         )
 
-        # Send message via Twilio
+        # Send message via Twilio (Yeastar conversations are handled in Linkus, not this panel)
         if twilio_client:
             # Ensure phone number has proper format for Twilio
             phone_number = conversation.whatsapp_number

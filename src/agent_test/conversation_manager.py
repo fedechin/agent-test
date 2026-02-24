@@ -5,7 +5,7 @@ import re
 from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
 from datetime import datetime
-from .models import Conversation, Message, ConversationStatus, HumanAgent
+from .models import Conversation, Message, ConversationStatus, ConversationSource, HumanAgent
 from .database import get_db
 
 class ConversationManager:
@@ -41,7 +41,9 @@ class ConversationManager:
             "speak to human", "talk to human", "human agent", "transfer to human"
         ]
 
-    def get_or_create_conversation(self, whatsapp_number: str, db: Session) -> Conversation:
+    def get_or_create_conversation(self, whatsapp_number: str, db: Session,
+                                    source: ConversationSource = ConversationSource.TWILIO,
+                                    yeastar_session_id: Optional[int] = None) -> Conversation:
         """Get existing conversation or create new one."""
         conversation = db.query(Conversation).filter(
             Conversation.whatsapp_number == whatsapp_number,
@@ -55,11 +57,17 @@ class ConversationManager:
         if not conversation:
             conversation = Conversation(
                 whatsapp_number=whatsapp_number,
-                status=ConversationStatus.ACTIVE_AI
+                status=ConversationStatus.ACTIVE_AI,
+                source=source,
+                yeastar_session_id=yeastar_session_id
             )
             db.add(conversation)
             db.commit()
             db.refresh(conversation)
+        elif yeastar_session_id and conversation.yeastar_session_id != yeastar_session_id:
+            # Update session ID if it changed (new Yeastar session for same conversation)
+            conversation.yeastar_session_id = yeastar_session_id
+            db.commit()
 
         return conversation
 
@@ -152,9 +160,10 @@ class ConversationManager:
         return formatted_messages
 
     def get_pending_conversations(self, db: Session) -> List[Dict]:
-        """Get conversations pending human takeover."""
+        """Get conversations pending human takeover (Twilio only - Yeastar uses Linkus)."""
         conversations = db.query(Conversation).filter(
-            Conversation.status == ConversationStatus.PENDING_HUMAN
+            Conversation.status == ConversationStatus.PENDING_HUMAN,
+            Conversation.source != ConversationSource.YEASTAR
         ).order_by(Conversation.updated_at.asc()).all()
 
         result = []
@@ -182,10 +191,11 @@ class ConversationManager:
         return result
 
     def get_active_conversations(self, agent_id: str, db: Session) -> List[Dict]:
-        """Get conversations currently assigned to a human agent."""
+        """Get conversations currently assigned to a human agent (Twilio only - Yeastar uses Linkus)."""
         conversations = db.query(Conversation).filter(
             Conversation.status == ConversationStatus.ACTIVE_HUMAN,
-            Conversation.human_agent_id == agent_id
+            Conversation.human_agent_id == agent_id,
+            Conversation.source != ConversationSource.YEASTAR
         ).order_by(Conversation.updated_at.desc()).all()
 
         result = []
