@@ -485,6 +485,14 @@ def process_yeastar_message_background(
         db.close()
 
 
+@app.get("/yeastar/outbound-ip")
+async def check_outbound_ip():
+    """Check what outbound IP Railway is using (temporary diagnostic)."""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get("https://api.ipify.org?format=json")
+        return response.json()
+
+
 @app.post("/yeastar/webhook")
 async def yeastar_webhook(
     request: Request,
