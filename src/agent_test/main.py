@@ -503,6 +503,7 @@ async def yeastar_webhook(
 
     event_type = body.get("type")
     logger.info(f"Yeastar webhook event: type={event_type}")
+    logger.debug(f"Yeastar webhook raw payload: {json.dumps(body, default=str)[:500]}")
 
     # Validate webhook secret if configured (via query param or header)
     token = request.query_params.get("token") or request.headers.get("X-Webhook-Token")
@@ -513,6 +514,11 @@ async def yeastar_webhook(
     # Event 30032: Message Sending Result - just log it
     if event_type == 30032:
         msg = body.get("msg", {})
+        if isinstance(msg, str):
+            try:
+                msg = json.loads(msg)
+            except (json.JSONDecodeError, TypeError):
+                msg = {}
         logger.info(
             f"Yeastar send result: session={msg.get('session_id')}, "
             f"msg_id={msg.get('msg_id')}, status={msg.get('delivery_status')}, "
@@ -523,6 +529,13 @@ async def yeastar_webhook(
     # Event 30031: New Message Notification
     if event_type == 30031:
         msg = body.get("msg", {})
+        # Yeastar may send msg as a JSON string instead of an object
+        if isinstance(msg, str):
+            try:
+                msg = json.loads(msg)
+            except (json.JSONDecodeError, TypeError):
+                logger.error(f"Yeastar: could not parse msg field: {msg[:200]}")
+                return JSONResponse(status_code=400, content={"error": "Invalid msg format"})
         session_id = msg.get("session_id")
         sender = msg.get("sender", {})
         sender_type = sender.get("user_type")
