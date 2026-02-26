@@ -59,6 +59,7 @@ class YeastarClient:
     async def _authenticate(self) -> str:
         """Authenticate with client credentials and get access token."""
         url = self._api_url("get_token")
+        logger.info(f"Yeastar auth: calling {url}")
         payload = {
             "username": self.client_id,
             "password": self.client_secret
@@ -73,10 +74,11 @@ class YeastarClient:
                     "User-Agent": "OpenAPI"
                 }
             )
+            logger.info(f"Yeastar auth response: status={response.status_code}, body={response.text[:300]}")
             data = response.json()
 
         if data.get("errcode") != 0:
-            logger.error(f"Yeastar auth failed: {data.get('errmsg', 'Unknown error')}")
+            logger.error(f"Yeastar auth failed: {data}")
             raise Exception(f"Yeastar authentication failed: {data.get('errmsg')}")
 
         now = time.time()

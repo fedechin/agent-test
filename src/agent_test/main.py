@@ -461,7 +461,7 @@ def process_yeastar_message_background(
                 loop.close()
                 logger.info(f"Yeastar message sent: msg_id={result.get('msg_id')}")
             except Exception as yeastar_error:
-                logger.error(f"Yeastar API error: {yeastar_error}")
+                logger.exception(f"Yeastar API error: {yeastar_error}")
         else:
             logger.warning("Yeastar client not configured - response saved to DB only")
 
@@ -483,14 +483,6 @@ def process_yeastar_message_background(
                 pass
     finally:
         db.close()
-
-
-@app.get("/yeastar/outbound-ip")
-async def check_outbound_ip():
-    """Check what outbound IP Railway is using (temporary diagnostic)."""
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get("https://api.ipify.org?format=json")
-        return response.json()
 
 
 @app.post("/yeastar/webhook")
