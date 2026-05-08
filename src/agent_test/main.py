@@ -419,6 +419,26 @@ async def whatsapp_reply(
 
 # === Yeastar Webhook Endpoint ===
 
+USER_FACING_FALLBACK = (
+    "Disculpe, tuve un inconveniente al preparar su respuesta. "
+    "¿Podría reformular su consulta o intentar de nuevo? "
+    "Si persiste, puede llamarnos al (021) 552631."
+)
+
+
+def _send_yeastar_fallback(session_id: int, reason: str) -> None:
+    """Send the generic user-facing fallback via Yeastar and log a tagged incident."""
+    import asyncio
+
+    logger.warning(f"🚨 FALLBACK_SENT session={session_id} reason={reason}")
+    if not yeastar_client.is_configured:
+        return
+    try:
+        asyncio.run(yeastar_client.send_message(session_id, USER_FACING_FALLBACK))
+    except Exception:
+        logger.exception(f"🚨 FALLBACK_SEND_FAILED session={session_id}")
+
+
 def process_yeastar_message_background(
     conversation_id: int,
     whatsapp_number: str,
@@ -453,34 +473,17 @@ def process_yeastar_message_background(
         # Send message via Yeastar API
         if yeastar_client.is_configured:
             try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                result = loop.run_until_complete(
-                    yeastar_client.send_message(session_id, message)
-                )
-                loop.close()
+                result = asyncio.run(yeastar_client.send_message(session_id, message))
                 logger.info(f"Yeastar message sent: msg_id={result.get('msg_id')}")
             except Exception as yeastar_error:
                 logger.exception(f"Yeastar API error: {yeastar_error}")
+                _send_yeastar_fallback(session_id, "yeastar_send_failed")
         else:
             logger.warning("Yeastar client not configured - response saved to DB only")
 
     except Exception as e:
         logger.exception("Error processing Yeastar message in background")
-        # Try to send error message
-        if yeastar_client.is_configured:
-            try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(
-                    yeastar_client.send_message(
-                        session_id,
-                        "Disculpe, hubo un problema procesando su consulta. Por favor intente de nuevo."
-                    )
-                )
-                loop.close()
-            except:
-                pass
+        _send_yeastar_fallback(session_id, "rag_chain_error")
     finally:
         db.close()
 
