@@ -25,6 +25,21 @@ Podés abonar tus cuotas societarias a través de los canales habilitados por la
 
 Contamos con más de 50 beneficios, los montos y requisitos varían según el tipo de subsidio.
 
+### ¿Qué tipos de subsidios ofrece la cooperativa?
+Las categorías de subsidios disponibles son:
+- Subsidios por Nacimiento
+- Subsidios por Matrimonio y Aniversarios de Bodas
+- Subsidios por Egreso Educativo
+- Subsidios por Fallecimiento
+- Subsidios por Internación
+- Subsidios por Asistencia y Recuperación de la Salud
+- Subsidio por Incapacidad Física Permanente
+- Subsidios por Salud Visual, Fisioterapia y Odontología
+- Subsidios por Traslado en Ambulancia
+- Asistencia a la Tercera Edad
+
+Cada categoría incluye varios subsidios con montos y requisitos específicos. Para conocer el monto y los requisitos de un subsidio puntual, consulte la categoría correspondiente.
+
 **Requisitos generales:**
 - Estar al día a la fecha del evento y presentación
 - Presentar documento requerido de acuerdo al evento
@@ -114,6 +129,22 @@ El Nazareth Country Club es un espacio recreativo exclusivo para asociados y fam
 ---
 
 ## CRÉDITOS
+
+### ¿Qué tipos de crédito ofrece la cooperativa?
+La Cooperativa ofrece los siguientes tipos de crédito:
+- Crédito Ordinario
+- Crédito de Inversión
+- Crédito Escolar
+- Crédito Educación
+- Crédito Educación financiado por la AFD
+- Crédito Vehículo
+- Crédito Salud
+- Crédito Vivienda - Primer Inmueble
+- Crédito Especial Vivienda
+- Crédito AFD - Primera Vivienda
+- Crédito AFD - Che Róga Porä
+
+Para conocer montos, requisitos y condiciones de cada crédito, consulte el tipo específico.
 
 ### Proceso de aprobación para los créditos
 Se debe presentar la solicitud de crédito. Puede ser en forma física, y por los medios digitales habilitados (wsp, correo, etc).

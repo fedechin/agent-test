@@ -1,0 +1,221 @@
+{
+  "_comment": "Banco de preguntas y respuestas para evaluar al chatbot de la Cooperativa Nazareth. Ejecutar con: python3 tests/run_eval.py. Cada caso define que DEBE (must_contain) y que NO DEBE (must_not_contain) aparecer en la respuesta. expect_fallback=true significa que la base de conocimiento NO tiene el dato y el bot debe responder con la frase de derivacion (regla 3.1: telefono 552631). Para agregar una pregunta, copie un caso y edite los campos. Las correcciones de CONTENIDO de la base de conocimiento estan en tests/KB_REVISION_PENDIENTE.md, no aqui.",
+  "_fallback_comment": "Un caso kb_gap se considera APROBADO si la respuesta reconoce que el dato no está disponible o deriva la consulta, SIN inventar el dato. Estos marcadores detectan ese reconocimiento. Las afirmaciones inventadas (p.ej. 'no se permite acampar', horarios fabricados) no contienen ninguno de estos marcadores y por lo tanto FALLAN.",
+  "fallback_markers": ["552631", "sucursal", "no tengo informaci", "no tengo esa informaci", "informacion disponible", "informacion especifica", "no se especifica", "no se detallan", "no cuento con", "no dispongo", "no figura", "no tiene un monto", "no esta establecid", "no se establece", "no existe un monto"],
+  "cases": [
+    {
+      "id": "pos-cuota-ingreso",
+      "category": "positive",
+      "question": "¿Cuánto es la cuota de ingreso para asociarme?",
+      "must_contain": ["100.000"],
+      "notes": "KB: Cuota de ingreso Gs. 100.000."
+    },
+    {
+      "id": "pos-cuota-mensual",
+      "category": "positive",
+      "question": "¿Cuánto pago de cuota mensual como socio?",
+      "must_contain": ["32.000"],
+      "notes": "KB: Cuota mensual Gs. 32.000."
+    },
+    {
+      "id": "pos-credito-ordinario-min",
+      "category": "positive",
+      "question": "¿Cuál es el monto mínimo del crédito ordinario?",
+      "must_contain": ["500.000"],
+      "notes": "KB: Crédito Ordinario monto mínimo Gs. 500.000."
+    },
+    {
+      "id": "pos-credito-ordinario-max",
+      "category": "positive",
+      "question": "¿Hasta cuánto puedo pedir en un crédito ordinario?",
+      "must_contain": ["400.000.000"],
+      "notes": "KB: Crédito Ordinario monto máximo Gs. 400.000.000."
+    },
+    {
+      "id": "pos-tasa-ahorro-vista",
+      "category": "positive",
+      "question": "¿Cuál es la tasa de la caja de ahorro a la vista?",
+      "must_contain": ["0,75"],
+      "notes": "KB: tasa 0,75% anual."
+    },
+    {
+      "id": "pos-plazo-fijo",
+      "category": "positive",
+      "question": "¿Desde qué monto puedo hacer un ahorro a plazo fijo?",
+      "must_contain": ["500.000"],
+      "notes": "KB: depósito desde Gs. 500.000, plazo 180 a 1.800 días."
+    },
+    {
+      "id": "pos-requisitos-caja-ahorro",
+      "category": "positive",
+      "question": "¿Qué requisitos necesito para abrir una caja de ahorro?",
+      "must_contain": ["socio activo", "cédula"],
+      "notes": "KB: ser socio activo, presentar cédula vigente y firmar contrato de apertura. Estos requisitos son SOLO de la caja de ahorro, no del ahorro infantil."
+    },
+    {
+      "id": "pos-tarjetas-credito",
+      "category": "positive",
+      "question": "¿Qué tarjetas de crédito ofrecen?",
+      "must_contain": ["Credicard", "Cabal", "Visa"],
+      "notes": "KB: Credicard clásica, Credicard Luisito, Cabal clásica y Visa clásica."
+    },
+    {
+      "id": "pos-td-reimpresion-pin",
+      "category": "positive",
+      "question": "¿Cuánto cuesta la reimpresión del pin de mi tarjeta de débito?",
+      "must_contain": ["10.000"],
+      "notes": "KB: reimpresión de pin Gs. 10.000. AQUÍ el 10.000 es correcto; el bot lo atribuyó por error al ahorro infantil."
+    },
+    {
+      "id": "pos-subsidio-nacimiento",
+      "category": "positive",
+      "question": "¿Cuánto es el subsidio por nacimiento de parto normal?",
+      "must_contain": ["700.000"],
+      "notes": "KB Subsidios: nacimiento parto normal Gs. 700.000."
+    },
+    {
+      "id": "pos-subsidio-fallecimiento-socio",
+      "category": "positive",
+      "question": "¿De cuánto es el subsidio por fallecimiento del socio?",
+      "must_contain": ["3.000.000"],
+      "notes": "KB Subsidios: fallecimiento del socio Gs. 3.000.000."
+    },
+    {
+      "id": "pos-salon-fundadores",
+      "category": "positive",
+      "question": "¿Cuánto cuesta alquilar el Salón Socios Fundadores?",
+      "must_contain": ["1.500.000"],
+      "notes": "KB: Salón Socios Fundadores Gs. 1.500.000."
+    },
+    {
+      "id": "pos-precoop-requisitos",
+      "category": "positive",
+      "question": "¿Qué requisitos tiene la precooperativa?",
+      "must_contain": ["5.000"],
+      "notes": "KB: canon de inscripción Gs. 5.000 y cuota mensual Gs. 5.000."
+    },
+
+    {
+      "id": "ret-tipos-credito-completo",
+      "category": "retrieval",
+      "question": "¿Qué tipos de crédito ofrece la cooperativa?",
+      "must_contain": ["Che Róga"],
+      "notes": "FEEDBACK #3: al listar créditos faltaba Che Róga Porä, que SÍ está en la KB. Si falla, es problema de recuperación/chunking (k bajo o chunk cortado), no de la KB."
+    },
+    {
+      "id": "ret-cheroga-existe",
+      "category": "retrieval",
+      "question": "¿Tienen el crédito Che Róga Porä?",
+      "must_contain": ["cherogapora"],
+      "notes": "KB: Crédito AFD - Che Róga Porä, postularse en www.cherogapora.gov.py."
+    },
+    {
+      "id": "ret-subsidios-listado",
+      "category": "retrieval",
+      "question": "¿Qué subsidios tiene la cooperativa?",
+      "must_contain": ["fallecimiento", "nacimiento"],
+      "notes": "FEEDBACK #4: traía solo algunos subsidios. La KB tiene 53 subsidios en Subsidios_2026.md. Debe resumir las categorías principales y ofrecer ampliar, sin inventar montos."
+    },
+
+    {
+      "id": "gap-ahorro-infantil-min",
+      "category": "kb_gap",
+      "question": "¿Cuál es el monto mínimo del ahorro infantil?",
+      "expect_fallback": true,
+      "must_not_contain": ["10.000", "10000"],
+      "notes": "BUG ORIGINAL. La KB NO especifica monto mínimo del ahorro infantil. No debe inventar ninguna cifra (especialmente Gs. 10.000)."
+    },
+    {
+      "id": "gap-ahorro-infantil-max",
+      "category": "kb_gap",
+      "question": "¿Cuál es el monto máximo del ahorro infantil?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #2: la KB no especifica monto máximo del ahorro infantil."
+    },
+    {
+      "id": "gap-ahorro-vista-min",
+      "category": "kb_gap",
+      "question": "¿Cuál es el monto mínimo de la caja de ahorro a la vista?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #2: la KB indica la tasa (0,75%) pero NO el monto mínimo de apertura."
+    },
+    {
+      "id": "gap-ahorro-programado-montos",
+      "category": "kb_gap",
+      "question": "¿Cuál es el monto mínimo y máximo del ahorro programado?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #2: la KB describe el ahorro programado pero no especifica montos mínimo/máximo."
+    },
+    {
+      "id": "gap-rueda-de-ahorros",
+      "category": "kb_gap",
+      "question": "¿Qué es la rueda de ahorros y cómo funciona?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #1 y #2: la rueda de ahorros NO existe en la KB. No debe inventar una descripción."
+    },
+    {
+      "id": "gap-centro-medico-numero-reservas",
+      "category": "kb_gap",
+      "question": "¿A qué número llamo para reservar un turno en el centro médico?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #5: la KB dice 'vía telefónica o canales habilitados' pero NO da un número específico de reservas."
+    },
+    {
+      "id": "gap-centro-medico-especialidades-lista",
+      "category": "kb_gap",
+      "question": "¿Cuáles son las 20 especialidades del centro médico? Listámelas todas.",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #5: la KB dice 'más de 20 especialidades' pero NO las lista. El bot NO debe inventar nombres de especialidades."
+    },
+    {
+      "id": "gap-centro-medico-costos",
+      "category": "kb_gap",
+      "question": "¿Cuánto cuesta una consulta con cada especialista del centro médico?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #5: la KB no tiene costos de las especialidades."
+    },
+    {
+      "id": "gap-centro-medico-dias-horarios",
+      "category": "kb_gap",
+      "question": "¿Qué días y horarios atienden los especialistas del centro médico?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #5: la KB no tiene días ni horarios por especialidad."
+    },
+    {
+      "id": "gap-country-horarios",
+      "category": "kb_gap",
+      "question": "¿Cuáles son los días y horarios de ingreso al Country Club?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #6: la KB no especifica horarios ni días de ingreso al Country Club."
+    },
+    {
+      "id": "gap-country-acampar",
+      "category": "kb_gap",
+      "question": "¿Se puede acampar en el Country Club?",
+      "expect_fallback": true,
+      "must_not_contain": ["no se puede acampar", "no está permitido acampar", "sí se puede acampar"],
+      "notes": "FEEDBACK #6: la KB no menciona nada sobre acampar. El bot NO debe afirmar ni negar; debe derivar la consulta."
+    },
+    {
+      "id": "gap-salones-alquilar-country",
+      "category": "kb_gap",
+      "question": "¿Puedo alquilar el Country Club para un evento?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #7: la KB lista 3 salones para alquiler pero NO menciona el alquiler del Country. No debe inventar condiciones."
+    },
+    {
+      "id": "gap-salones-extender-horario",
+      "category": "kb_gap",
+      "question": "Si alquilo un salón, ¿puedo extender el horario del alquiler?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #7: la KB da horarios de alquiler pero no dice si se pueden extender."
+    },
+    {
+      "id": "gap-precoop-beneficios",
+      "category": "kb_gap",
+      "question": "¿Qué beneficios tiene formar parte de la precooperativa?",
+      "expect_fallback": true,
+      "notes": "FEEDBACK #8: la KB describe el objetivo y requisitos de la precoop pero NO lista 'beneficios'. No debe inventarlos."
+    }
+  ]
+}
