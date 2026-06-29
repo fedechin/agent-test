@@ -1,7 +1,7 @@
 {
   "_comment": "Banco de preguntas y respuestas para evaluar al chatbot de la Cooperativa Nazareth. Ejecutar con: python3 tests/run_eval.py. Cada caso define que DEBE (must_contain) y que NO DEBE (must_not_contain) aparecer en la respuesta. expect_fallback=true significa que la base de conocimiento NO tiene el dato y el bot debe responder con la frase de derivacion (regla 3.1: telefono 552631). Para agregar una pregunta, copie un caso y edite los campos. Las correcciones de CONTENIDO de la base de conocimiento estan en tests/KB_REVISION_PENDIENTE.md, no aqui.",
   "_fallback_comment": "Un caso kb_gap se considera APROBADO si la respuesta reconoce que el dato no está disponible o deriva la consulta, SIN inventar el dato. Estos marcadores detectan ese reconocimiento. Las afirmaciones inventadas (p.ej. 'no se permite acampar', horarios fabricados) no contienen ninguno de estos marcadores y por lo tanto FALLAN.",
-  "fallback_markers": ["552631", "sucursal", "no tengo informaci", "no tengo esa informaci", "informacion disponible", "informacion especifica", "no se especifica", "no se detallan", "no cuento con", "no dispongo", "no figura", "no tiene un monto", "no esta establecid", "no se establece", "no existe un monto"],
+  "fallback_markers": ["[derivar_humano]", "derivar su consulta", "agente humano", "552631", "sucursal", "no tengo informaci", "no tengo esa informaci", "informacion disponible", "informacion especifica", "no se especifica", "no se detallan", "no cuento con", "no dispongo", "no figura", "no tiene un monto", "no esta establecid", "no se establece", "no existe un monto"],
   "cases": [
     {
       "id": "pos-cuota-ingreso",

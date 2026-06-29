@@ -91,6 +91,20 @@ twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_
 # === Build RAG chain once and store globally ===
 qa_chain, context = build_rag_chain()
 
+# Etiqueta que el agente IA antepone cuando no encuentra la respuesta en la base
+# de conocimiento (regla 3.1 del contexto). Al detectarla, escalamos la
+# conversación a un agente humano y quitamos la etiqueta antes de enviar el texto.
+HANDOVER_MARKER = "[DERIVAR_HUMANO]"
+
+def apply_handover_if_needed(message: str, conversation_id: int, db) -> str:
+    """Si el agente IA señaló que no tiene la información, deriva la conversación
+    a un agente humano (PENDING_HUMAN) y elimina la etiqueta del mensaje."""
+    if HANDOVER_MARKER in message:
+        conversation_manager.request_human_takeover(conversation_id, db)
+        message = message.replace(HANDOVER_MARKER, "").strip()
+        logger.info(f"🔄 Sin información en la base - derivación a humano solicitada para conversación {conversation_id}")
+    return message
+
 # === Heavy Query Detection ===
 def is_heavy_query(query: str) -> bool:
     """
@@ -139,6 +153,7 @@ def process_heavy_query_background(
             "conversation_history": conversation_history
         })
         message = str(response)
+        message = apply_handover_if_needed(message, conversation_id, db)
 
         logger.info(f"✅ Heavy query processed: {len(message)} characters")
 
@@ -387,6 +402,7 @@ async def whatsapp_reply(
                     "conversation_history": conversation_history
                 })
                 message = str(response)
+                message = apply_handover_if_needed(message, conversation.id, db)
                 logger.info(f"🤖 RAG response: {message}")
                 logger.debug(f"💬 Used {len(conversation_history)} messages from history")
 
@@ -461,6 +477,7 @@ def process_yeastar_message_background(
             "conversation_history": conversation_history
         })
         message = str(response)
+        message = apply_handover_if_needed(message, conversation_id, db)
 
         logger.info(f"RAG response ready: {len(message)} characters")
 

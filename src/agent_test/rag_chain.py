@@ -19,9 +19,14 @@ INDEX_PATH = os.path.join(DATA_DIR, "faiss_index")
 CONTEXT_PATH = os.getenv("CONTEXT_FILE", "context/context.txt")
 
 # Frase de derivación (regla 3.1 del contexto) para cuando no hay información.
+# Inicia con la etiqueta [DERIVAR_HUMANO]: el webhook la detecta para escalar la
+# conversación a un agente humano (request_human_takeover) y luego la elimina del
+# texto antes de enviarlo al socio.
 FALLBACK_MESSAGE = (
-    "No tengo esa información, favor llamar al número (021) 552631 o "
-    "acercarse a cualquiera de nuestras sucursales."
+    "[DERIVAR_HUMANO] No tengo esa información, pero voy a derivar su consulta "
+    "a un agente humano que se pondrá en contacto con usted a la brevedad. "
+    "Si lo prefiere, también puede llamar al (021) 552631 o acercarse a "
+    "cualquiera de nuestras sucursales."
 )
 # Umbral de relevancia: si el mejor fragmento recuperado queda por debajo, el tema
 # no está en la base de conocimiento y derivamos en vez de arriesgar una respuesta.
