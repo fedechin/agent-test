@@ -21,6 +21,9 @@ tiktoken = "^0.7.0"
 # Vector store
 faiss-cpu = "^1.8.0"
 
+# Sparse retrieval for hybrid search (BM25 + dense)
+rank-bm25 = "^0.2.2"
+
 # Twilio
 twilio = "^9.0.4"
 

@@ -3,9 +3,11 @@ from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders import DirectoryLoader, TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
 from langchain_core.runnables import RunnableLambda, RunnableMap
 from langchain_core.output_parsers import StrOutputParser
 
@@ -16,7 +18,32 @@ DATA_DIR = os.getenv("DOCS_FOLDER", "data")
 INDEX_PATH = os.path.join(DATA_DIR, "faiss_index")
 CONTEXT_PATH = os.getenv("CONTEXT_FILE", "context/context.txt")
 
+# Frase de derivación (regla 3.1 del contexto) para cuando no hay información.
+# Inicia con la etiqueta [DERIVAR_HUMANO]: el webhook la detecta para escalar la
+# conversación a un agente humano (request_human_takeover) y luego la elimina del
+# texto antes de enviarlo al socio.
+FALLBACK_MESSAGE = (
+    "[DERIVAR_HUMANO] No tengo esa información, pero voy a derivar su consulta "
+    "a un agente humano que se pondrá en contacto con usted a la brevedad. "
+    "Si lo prefiere, también puede llamar al (021) 552631 o acercarse a "
+    "cualquiera de nuestras sucursales."
+)
+# Umbral de relevancia: si el mejor fragmento recuperado queda por debajo, el tema
+# no está en la base de conocimiento y derivamos en vez de arriesgar una respuesta.
+# Conservador a propósito para no derivar preguntas válidas (se calibra con el eval).
+RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", "0.2"))
+
 # === Helpers ===
+# La base de conocimiento es markdown con estructura de preguntas/respuestas
+# (## sección, ### pregunta). Dividimos por encabezados para que cada fragmento
+# sea una unidad autocontenida (una pregunta con su respuesta) y un dato nunca
+# quede pegado a un tema que no le corresponde (causa de la alucinación "Gs. 10.000").
+MD_HEADERS = [("#", "h1"), ("##", "h2"), ("###", "h3"), ("####", "h4")]
+# Tope para secciones muy largas (p.ej. el catálogo completo de créditos): se
+# subdividen; las secciones cortas quedan intactas como un solo fragmento.
+MAX_CHUNK_SIZE = 1500
+CHUNK_OVERLAP = 150
+
 def load_documents():
     # Load both .txt and .md files
     txt_loader = DirectoryLoader(DATA_DIR, glob="**/*.txt", loader_cls=TextLoader)
@@ -25,16 +52,32 @@ def load_documents():
     raw_docs = []
     raw_docs.extend(txt_loader.load())
     raw_docs.extend(md_loader.load())
-    
-    # Clean the content of documents to remove BOM and other encoding issues
+
+    header_splitter = MarkdownHeaderTextSplitter(
+        headers_to_split_on=MD_HEADERS, strip_headers=False
+    )
+    size_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=MAX_CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP
+    )
+
+    chunks = []
     for doc in raw_docs:
         # Remove BOM and normalize the text
-        doc.page_content = doc.page_content.encode('utf-8').decode('utf-8-sig').strip()
-        
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=150)
-    return splitter.split_documents(raw_docs)
+        clean = doc.page_content.encode('utf-8').decode('utf-8-sig').strip()
+        source = doc.metadata.get('source', 'desconocido')
 
-def build_or_load_vectorstore():
+        # Split by markdown headers; MarkdownHeaderTextSplitter drops the source
+        # metadata, so we restore it on each resulting section.
+        sections = header_splitter.split_text(clean)
+        for sec in sections:
+            sec.metadata['source'] = source
+
+        # Cap oversized sections without breaking the small Q&A ones.
+        chunks.extend(size_splitter.split_documents(sections))
+
+    return chunks
+
+def build_or_load_vectorstore(docs=None):
     embeddings = OpenAIEmbeddings()
     os.makedirs(INDEX_PATH, exist_ok=True)
     index_file = os.path.join(INDEX_PATH, "index.faiss")
@@ -42,7 +85,8 @@ def build_or_load_vectorstore():
         print("[FAISS] Loading existing vector store from disk.")
         return FAISS.load_local(INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
     print("[FAISS] Building new vector store.")
-    docs = load_documents()
+    if docs is None:
+        docs = load_documents()
     vectorstore = FAISS.from_documents(docs, embeddings)
     vectorstore.save_local(INDEX_PATH)
     return vectorstore
@@ -56,8 +100,22 @@ def load_context(context_path=CONTEXT_PATH):
 
 # === Custom RAG Chain ===
 def build_rag_chain(context_path=CONTEXT_PATH, model_name="gpt-4o-mini"):
-    vectorstore = build_or_load_vectorstore()
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
+    # Load the chunks once and reuse them for both retrievers.
+    docs = load_documents()
+    vectorstore = build_or_load_vectorstore(docs)
+
+    # Hybrid retrieval: BM25 (sparse, exact keywords / nombres propios como
+    # "Che Róga Porä") + denso (FAISS, semántico). Se combinan con fusión de
+    # rangos. BM25 es local: no agrega costo de API.
+    # k un poco más alto mejora la recuperación en preguntas tipo "listar todos"
+    # (p.ej. todos los tipos de crédito o todos los subsidios), donde hay ~14 ítems.
+    retrieval_k = int(os.getenv("RETRIEVAL_K", "8"))
+    dense_retriever = vectorstore.as_retriever(search_kwargs={"k": retrieval_k})
+    bm25_retriever = BM25Retriever.from_documents(docs)
+    bm25_retriever.k = retrieval_k
+    retriever = EnsembleRetriever(
+        retrievers=[bm25_retriever, dense_retriever], weights=[0.4, 0.6]
+    )
     context = load_context(context_path)
 
     system_prompt = SystemMessagePromptTemplate.from_template(
@@ -78,7 +136,9 @@ PREGUNTA ACTUAL DEL SOCIO:
     )
 
     chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
-    llm = ChatOpenAI(model=model_name)
+    # Temperatura baja: respuestas más consistentes y menos propensas a "rellenar"
+    # datos faltantes. No es 0 para conservar algo de naturalidad en el tono.
+    llm = ChatOpenAI(model=model_name, temperature=0.2)
 
     def format_docs(docs):
         return "\n\n".join([
@@ -139,6 +199,14 @@ PREGUNTA REFORMULADA (mantén el idioma original):"""
         # Contextualize the query if there's conversation history
         # This ensures follow-up questions retrieve the right documents
         search_query = contextualize_query(query, conversation_history)
+
+        # Relevance gate: si ni el mejor fragmento del índice denso es relevante,
+        # el tema no está en la base de conocimiento. Derivamos directamente (sin
+        # llamar al LLM) en vez de dejar que el modelo invente una respuesta.
+        scored = vectorstore.similarity_search_with_relevance_scores(search_query, k=1)
+        top_score = scored[0][1] if scored else 0.0
+        if top_score < RELEVANCE_THRESHOLD:
+            return FALLBACK_MESSAGE
 
         # Get relevant documents using the contextualized query
         docs = retriever.invoke(search_query)
