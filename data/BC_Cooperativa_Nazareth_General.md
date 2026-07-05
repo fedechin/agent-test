@@ -143,6 +143,7 @@ La Cooperativa ofrece los siguientes tipos de crédito:
 - Crédito Especial Vivienda
 - Crédito AFD - Primera Vivienda
 - Crédito AFD - Che Róga Porä
+- Crédito Pre-aprobado (línea de crédito pre-aprobada)
 
 Para conocer montos, requisitos y condiciones de cada crédito, consulte el tipo específico.
 

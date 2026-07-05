@@ -99,8 +99,8 @@
       "id": "ret-tipos-credito-completo",
       "category": "retrieval",
       "question": "¿Qué tipos de crédito ofrece la cooperativa?",
-      "must_contain": ["Che Róga"],
-      "notes": "FEEDBACK #3: al listar créditos faltaba Che Róga Porä, que SÍ está en la KB. Si falla, es problema de recuperación/chunking (k bajo o chunk cortado), no de la KB."
+      "must_contain": ["Che Róga", "aprobado"],
+      "notes": "FEEDBACK #3 y #2 (jun26): al listar créditos faltaba Che Róga Porä y el crédito Pre-aprobado, ambos presentes en la KB. 'aprobado' cubre 'Crédito Pre-aprobado'. Si falla, es problema de recuperación/chunking o falta el ítem en el índice de créditos."
     },
     {
       "id": "ret-cheroga-existe",
@@ -159,6 +159,13 @@
       "question": "¿A qué número llamo para reservar un turno en el centro médico?",
       "expect_fallback": true,
       "notes": "FEEDBACK #5: la KB dice 'vía telefónica o canales habilitados' pero NO da un número específico de reservas."
+    },
+    {
+      "id": "gap-centro-medico-ayuda-reservar",
+      "category": "kb_gap",
+      "question": "Sí, quiero que me ayudes a hacer una reserva de turno en el centro médico.",
+      "expect_fallback": true,
+      "notes": "FEEDBACK jun26: el bot NO puede agendar/reservar y la KB no tiene un número/canal concreto de reservas (solo 'vía telefónica o canales habilitados'). Debe derivar (regla 4.12), no repetir la frase genérica ni ofrecer 'ayudar a agendar'."
     },
     {
       "id": "gap-centro-medico-especialidades-lista",
