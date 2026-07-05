@@ -136,9 +136,11 @@ PREGUNTA ACTUAL DEL SOCIO:
     )
 
     chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
-    # Temperatura baja: respuestas más consistentes y menos propensas a "rellenar"
-    # datos faltantes. No es 0 para conservar algo de naturalidad en el tono.
-    llm = ChatOpenAI(model=model_name, temperature=0.2)
+    # Temperatura 0: respuestas deterministas y sin "relleno" creativo. Con 0.2 el
+    # modelo a veces inventaba condiciones no presentes en la base (p.ej. "Country
+    # Club: Todos los días" o inferir que no se puede alquilar). Priorizamos evitar
+    # alucinaciones por sobre la naturalidad del tono.
+    llm = ChatOpenAI(model=model_name, temperature=0.0)
 
     def format_docs(docs):
         return "\n\n".join([
