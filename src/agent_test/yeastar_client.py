@@ -13,6 +13,58 @@ logger = logging.getLogger("rag_agent")
 # API path for Yeastar P-Series
 API_PATH = "/openapi/v1.0"
 
+# Yeastar rechaza cuerpos de mensaje de más de 1600 caracteres (errcode 40002,
+# validación 'lte' 1600). Usamos un tope algo menor como margen y, si el mensaje
+# lo supera, lo dividimos en varias partes que se envían en orden. Es una red de
+# seguridad: aunque el modelo se pase de largo, el envío nunca falla.
+MAX_MSG_LEN = 1500
+
+
+def split_message(text: str, limit: int = MAX_MSG_LEN) -> list:
+    """Divide un mensaje en partes de a lo sumo `limit` caracteres, cortando en
+    límites de párrafo (\\n\\n) o línea, y solo por palabras como último recurso,
+    para no partir palabras al medio."""
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return [text] if text else []
+
+    # 1) Descomponer en segmentos "atómicos" que ya quepan en el límite.
+    segments = []
+    for para in text.split("\n\n"):
+        if len(para) <= limit:
+            segments.append(para)
+            continue
+        for line in para.split("\n"):
+            if len(line) <= limit:
+                segments.append(line)
+                continue
+            cur = ""
+            for word in line.split(" "):
+                cand = (cur + " " + word).strip()
+                if len(cand) <= limit:
+                    cur = cand
+                else:
+                    if cur:
+                        segments.append(cur)
+                    cur = word[:limit]  # palabra más larga que el límite: corte duro
+            if cur:
+                segments.append(cur)
+
+    # 2) Reempaquetar los segmentos respetando el límite.
+    parts = []
+    cur = ""
+    for seg in segments:
+        sep = "\n\n" if cur else ""
+        if len(cur) + len(sep) + len(seg) <= limit:
+            cur += sep + seg
+        else:
+            if cur:
+                parts.append(cur)
+            cur = seg
+    if cur:
+        parts.append(cur)
+    return parts
+
 
 class YeastarClient:
     """Client for interacting with the Yeastar P-Series PBX API."""
@@ -128,6 +180,10 @@ class YeastarClient:
         """
         Send a text message in an existing session.
 
+        Si el mensaje supera el límite de Yeastar (MAX_MSG_LEN), se divide en
+        varias partes que se envían en orden. Devuelve la respuesta del último
+        envío. Si alguna parte falla, se propaga la excepción.
+
         Args:
             session_id: The Yeastar message session ID.
             message_body: The text message to send.
@@ -135,6 +191,20 @@ class YeastarClient:
         Returns:
             API response dict with errcode, msg_id, session_id.
         """
+        parts = split_message(message_body)
+        if len(parts) > 1:
+            logger.info(
+                f"Yeastar message split into {len(parts)} parts "
+                f"(session={session_id}, len={len(message_body)})"
+            )
+
+        data = None
+        for part in parts:
+            data = await self._send_one(session_id, part)
+        return data
+
+    async def _send_one(self, session_id: int, message_body: str) -> dict:
+        """Envía un único mensaje (una parte) a la sesión."""
         token = await self._get_token()
         url = self._api_url(f"message/send?access_token={token}")
 
