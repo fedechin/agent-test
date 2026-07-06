@@ -277,6 +277,10 @@ Se puede hacer ampliación de un crédito siempre y cuando ya tenga abonado como
 - **OBS:** socio interesado primeramente deberá postularse al programa a través de la página www.cherogapora.gov.py
 - **Proyectos y requisitos:** Los mismos que AFD - Primera Vivienda
 
+#### Crédito Pre-aprobado (línea de crédito pre-aprobada)
+- Línea de crédito ya aprobada para socios que cumplen los criterios de elegibilidad (evaluación por scoring interno), disponible para usar cuando el socio la necesite, sin evaluación adicional. Ver "Líneas de crédito pre aprobadas".
+- **Monto:** no tiene un monto fijo publicado; depende del historial y la relación de cada socio con la cooperativa (hasta el monto aprobado para ese socio).
+
 ---
 
 ## TARJETAS
