@@ -99,8 +99,8 @@
       "id": "ret-tipos-credito-completo",
       "category": "retrieval",
       "question": "¿Qué tipos de crédito ofrece la cooperativa?",
-      "must_contain": ["Che Róga", "aprobado"],
-      "notes": "FEEDBACK #3 y #2 (jun26): al listar créditos faltaba Che Róga Porä y el crédito Pre-aprobado, ambos presentes en la KB. 'aprobado' cubre 'Crédito Pre-aprobado'. Si falla, es problema de recuperación/chunking o falta el ítem en el índice de créditos."
+      "must_contain": ["Ordinario", "Inversión", "Escolar", "Educación financiado por la AFD", "Vehículo", "Salud", "Primer Inmueble", "Especial Vivienda", "Primera Vivienda", "Che Róga", "aprobado"],
+      "notes": "FEEDBACK #3, #2 y jul06: al listar créditos debe aparecer la lista COMPLETA (12 ítems), sin omitir ninguno. En producción se vieron solo 9 (faltaban Salud y Educación financiado por la AFD) porque el formato verboso truncaba la lista. 'aprobado' cubre 'Crédito Pre-aprobado'."
     },
     {
       "id": "ret-cheroga-existe",
