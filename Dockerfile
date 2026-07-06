@@ -31,13 +31,8 @@ COPY start.sh ./
 # Create folders for volume mounts (optional but safe)
 RUN mkdir -p ./data ./logs
 
-# Build FAISS index at build time (requires OPENAI_API_KEY as build arg)
-ARG OPENAI_API_KEY
-RUN if [ -n "$OPENAI_API_KEY" ]; then \
-    echo "Building FAISS index..." && \
-    python -c "from src.agent_test.rag_chain import build_or_load_vectorstore; build_or_load_vectorstore()" && \
-    echo "FAISS index built successfully"; \
-    else echo "Skipping FAISS build (no API key)"; fi
+# No hay índice vectorial que construir: la base de conocimiento se carga
+# completa en el contexto del modelo en tiempo de ejecución (ver rag_chain.py).
 
 # Make startup script executable
 RUN chmod +x start.sh
