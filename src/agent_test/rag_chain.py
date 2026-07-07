@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
@@ -85,6 +86,14 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
     # evitar alucinaciones por sobre la naturalidad del tono.
     llm = ChatOpenAI(model=model_name, temperature=0.0)
 
+    # Tope de longitud para los mensajes del ASISTENTE en el historial. Las
+    # respuestas largas previas (p.ej. un listado con formato) actúan como ejemplos
+    # few-shot y el modelo copia ese formato, ignorando las reglas de formato
+    # actuales (regla 3.3). Comprimir los saltos de línea y truncar destruye esa
+    # "plantilla" pero conserva el contexto de qué se habló. Los mensajes del socio
+    # se dejan intactos.
+    HISTORY_ASSISTANT_MAXLEN = 150
+
     def format_conversation_history(history):
         """Format conversation history for the prompt."""
         if not history:
@@ -92,8 +101,15 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
 
         formatted = "HISTORIAL DE LA CONVERSACIÓN:\n"
         for msg in history:
-            role_label = "Socio" if msg["role"] == "customer" else "Asistente"
-            formatted += f"{role_label}: {msg['content']}\n"
+            is_customer = msg["role"] == "customer"
+            role_label = "Socio" if is_customer else "Asistente"
+            content = str(msg["content"])
+            if not is_customer:
+                # Comprimir saltos de línea y truncar para no anclar el formato.
+                content = re.sub(r"\s+", " ", content).strip()
+                if len(content) > HISTORY_ASSISTANT_MAXLEN:
+                    content = content[:HISTORY_ASSISTANT_MAXLEN] + " […]"
+            formatted += f"{role_label}: {content}\n"
         formatted += "\n"
         return formatted
 
