@@ -94,6 +94,15 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
     # se dejan intactos.
     HISTORY_ASSISTANT_MAXLEN = 150
 
+    # Igual que con el formato, una derivación previa ("No tengo esa información...")
+    # en el historial actúa como ejemplo y el modelo la copia: una vez que deriva,
+    # sigue derivando incluso preguntas que SÍ puede responder. La reemplazamos por
+    # una nota TOTALMENTE neutra: cualquier mención de "no tenía el dato" o "derivó"
+    # vuelve a anclar la derivación (verificado), así que el marcador no debe
+    # insinuar ni derivación ni falta de datos.
+    DERIVATION_SIGNATURE = "derivar su consulta a un agente humano"
+    DERIVATION_PLACEHOLDER = "(Respuesta a una consulta anterior.)"
+
     def format_conversation_history(history):
         """Format conversation history for the prompt."""
         if not history:
@@ -105,9 +114,12 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
             role_label = "Socio" if is_customer else "Asistente"
             content = str(msg["content"])
             if not is_customer:
-                # Comprimir saltos de línea y truncar para no anclar el formato.
                 content = re.sub(r"\s+", " ", content).strip()
-                if len(content) > HISTORY_ASSISTANT_MAXLEN:
+                if DERIVATION_SIGNATURE in content.lower():
+                    # Neutralizar la derivación para que no se copie.
+                    content = DERIVATION_PLACEHOLDER
+                elif len(content) > HISTORY_ASSISTANT_MAXLEN:
+                    # Truncar para no anclar el formato.
                     content = content[:HISTORY_ASSISTANT_MAXLEN] + " […]"
             formatted += f"{role_label}: {content}\n"
         formatted += "\n"
