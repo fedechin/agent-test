@@ -85,13 +85,34 @@ Los socios se encargan de abonar el concepto de Canon por Derechos de Autor, en 
 
 Reservas hasta con 6 meses de anticipación al evento.
 
+### ¿Se puede extender el horario del alquiler de un salón?
+La política de extensión de horario del alquiler NO figura en esta base. Las
+consultas sobre extensión de horario las gestiona el **Departamento de Educación**.
+
 ---
 
 ## CENTRO MÉDICO
 
-Con más de 20 especialidades, con profesionales comprometidos para cuidar la salud de nuestros asociados, familiares y comunidad.
+El Centro Médico cuenta con profesionales comprometidos para cuidar la salud de nuestros asociados, familiares y comunidad.
 
+### ¿Cómo reservo un turno en el Centro Médico?
 Reservas de turnos vía telefónica o por los canales habilitados.
+
+**Número para reservas:** 021 238 6777 int. 1800 — cel. 0981 770069
+
+### ¿Cuáles son las especialidades del Centro Médico?
+- Clínica Médica
+- Endocrinología
+- Fonoaudiología
+- Ginecología
+- Mastología / Ginecología
+- Nutrición
+- Odontología
+- Pediatría
+- Pediatría / Nefrología
+- Psicopedagogía
+- Traumatología
+- Urología
 
 ---
 
@@ -105,7 +126,14 @@ La Pre-cooperativa Infanto Juvenil es un servicio que tiene como objeto brindar 
 - Presentar copia de cédula de identidad actualizada del menor
 - Socio tutor al día
 - Llenar formulario de ingreso
-- Pago canon de inscripción Gs. 5.000 y cuota mensual Gs. 5.000
+
+### ¿Cuánto se paga de canon de inscripción y cuota mensual en la precooperativa?
+Los montos del canon de inscripción y de la cuota mensual de la precooperativa NO
+figuran en esta base: los informa el Departamento de Educación.
+
+La cuota de ingreso (Gs. 100.000) y la cuota mensual (Gs. 32.000) que figuran en la
+sección de asociación corresponden a la **asociación a la cooperativa**, NO a la
+precooperativa. No deben usarse para responder sobre la precooperativa.
 
 ---
 
@@ -120,6 +148,16 @@ El Nazareth Country Club es un espacio recreativo exclusivo para asociados y fam
 - Quinchos
 - Canchas deportivas
 - Espacios de recreación
+
+### ¿Cuáles son los días y horarios de ingreso al Country Club?
+Los lunes y miércoles permanece **cerrado por mantenimiento**.
+
+**Temporada Baja:** martes, y de jueves a domingo, de 10:00hs a 19:00hs.
+
+**Temporada Alta:** martes, y de jueves a domingo, de 09:00hs a 20:30hs.
+
+### ¿Se puede acampar en el Country Club?
+Sí, se puede realizar camping, pero se debe consultar previamente la disponibilidad y los costos.
 
 **Acceso:**
 - Pueden disfrutar de las instalaciones los socios, padres (mayores a 65 años de edad), cónyuges, hijos menores y mini socios de la precooperativa
@@ -340,9 +378,18 @@ Se puede hacer ampliación de un crédito siempre y cuando ya tenga abonado como
 - Ahorro a Plazo Fijo
 - Ahorro Programado
 - Ahorro Infantil e Infanto-Juvenil
+- Rueda de Ahorro
 
 ### ¿Cuáles son los requisitos para abrir una caja de ahorro?
 Ser socio activo, presentar cédula vigente y firmar el contrato de apertura.
+
+### Montos mínimos y máximos de apertura de los tipos de ahorro
+Los montos mínimos y máximos de apertura de la Caja de Ahorro a la Vista, del
+Ahorro Programado y del Ahorro Infantil / Infanto-Juvenil NO figuran en esta base.
+
+Que no figuren NO significa que no existan ni que no haya un mínimo: son datos que
+deben derivarse. No responder "no tiene monto mínimo" ni "no está establecido".
+(El monto de Gs. 500.000 corresponde únicamente al Ahorro a Plazo Fijo.)
 
 ### ¿Cuál es la tasa de la caja de ahorro a la vista?
 La tasa es del 0,75% anual, sujeta a disposiciones vigentes.
@@ -355,6 +402,13 @@ Es un ahorro con aportes periódicos, donde el socio define el monto y el plazo.
 
 ### ¿Qué es el ahorro infantil o infanto-juvenil?
 Es un ahorro destinado a menores, cuyo plazo se define según la edad al momento de la apertura.
+
+### ¿Qué es la Rueda de Ahorro?
+Es una modalidad de ahorro de la Cooperativa. Está sujeta a la disponibilidad de cuentas de cada tipo de Rueda.
+
+El mecanismo de funcionamiento, los montos, los plazos y los tipos de Rueda NO
+figuran en esta base. No deben describirse ni deducirse a partir de cómo funcionan
+las ruedas de ahorro en general: ese dato debe derivarse.
 
 ### ¿Las tasas pueden cambiar?
 Sí, las tasas están sujetas a actualización y pueden consultarse en la página web de la Cooperativa.

@@ -22,7 +22,7 @@ import json
 import httpx
 from urllib.parse import urlparse
 
-from .rag_chain import build_rag_chain
+from .rag_chain import build_rag_chain, DERIVATION_AREAS, DEFAULT_DERIVATION_AREA
 from .database import get_db, create_tables
 from .conversation_manager import ConversationManager
 from .models import ConversationStatus, ConversationSource, HumanAgent, AgentRole, Conversation, Message
@@ -94,15 +94,23 @@ qa_chain, context = build_rag_chain()
 # Etiqueta que el agente IA antepone cuando no encuentra la respuesta en la base
 # de conocimiento (regla 3.1 del contexto). Al detectarla, escalamos la
 # conversación a un agente humano y quitamos la etiqueta antes de enviar el texto.
-HANDOVER_MARKER = "[DERIVAR_HUMANO]"
+# Acepta [DERIVAR_HUMANO:AREA] (regla 3.1.1) y también [DERIVAR_HUMANO] a secas,
+# que es lo que emitían las versiones anteriores del prompt: si el modelo omite el
+# área, tratamos la derivación como GENERAL en vez de perderla.
+HANDOVER_MARKER_RE = re.compile(r"\[DERIVAR_HUMANO(?::([A-Z_]+))?\]")
 
 def apply_handover_if_needed(message: str, conversation_id: int, db) -> str:
     """Si el agente IA señaló que no tiene la información, deriva la conversación
     a un agente humano (PENDING_HUMAN) y elimina la etiqueta del mensaje."""
-    if HANDOVER_MARKER in message:
+    match = HANDOVER_MARKER_RE.search(message)
+    if match:
+        area = (match.group(1) or DEFAULT_DERIVATION_AREA).upper()
+        if area not in DERIVATION_AREAS:
+            logger.warning(f"Área de derivación desconocida '{area}' - se usa {DEFAULT_DERIVATION_AREA}")
+            area = DEFAULT_DERIVATION_AREA
         conversation_manager.request_human_takeover(conversation_id, db)
-        message = message.replace(HANDOVER_MARKER, "").strip()
-        logger.info(f"🔄 Sin información en la base - derivación a humano solicitada para conversación {conversation_id}")
+        message = HANDOVER_MARKER_RE.sub("", message).strip()
+        logger.info(f"🔄 Sin información en la base - derivación a '{area}' solicitada para conversación {conversation_id}")
     return message
 
 # === Heavy Query Detection ===
