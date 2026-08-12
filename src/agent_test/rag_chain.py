@@ -12,16 +12,60 @@ load_dotenv()
 DATA_DIR = os.getenv("DOCS_FOLDER", "data")
 CONTEXT_PATH = os.getenv("CONTEXT_FILE", "context/context.txt")
 
-# Frase de derivación (regla 3.1 del contexto) para cuando no hay información.
-# Inicia con la etiqueta [DERIVAR_HUMANO]: el webhook la detecta para escalar la
-# conversación a un agente humano (request_human_takeover) y luego la elimina del
-# texto antes de enviarlo al socio.
-FALLBACK_MESSAGE = (
-    "[DERIVAR_HUMANO] No tengo esa información, pero voy a derivar su consulta "
-    "a un agente humano que se pondrá en contacto con usted a la brevedad. "
-    "Si lo prefiere, también puede llamar al (021) 552631 o acercarse a "
-    "cualquiera de nuestras sucursales."
-)
+# Áreas de derivación (regla 3.1 del contexto) para cuando no hay información.
+# La etiqueta va como [DERIVAR_HUMANO:<AREA>]: el webhook la detecta para escalar
+# la conversación (request_human_takeover) y luego la elimina del texto antes de
+# enviarlo al socio.
+#
+# El cliente (feedback 07jul26) pidió que ciertas consultas se deriven a un área
+# concreta en lugar del conmutador general. Deliberadamente son POCAS áreas: los
+# pedidos llegaron servicio por servicio (costos del centro médico, horarios de
+# especialidades, canon de la precoop, extensión de alquiler...), pero agrupar los
+# servicios afines evita que el socio reciba un número distinto por cada consulta
+# y mantiene pocas colas en el panel. Para sumar un servicio nuevo casi siempre
+# alcanza con mapearlo a un área existente, no con crear otra.
+DERIVATION_AREAS = {
+    # Consultas del Centro Médico que la cooperativa no publica en la base:
+    # costos de especialidades, días y horarios de cada profesional.
+    "CENTRO_MEDICO": {
+        "label": "al Centro Médico",
+        "contacto": "también puede llamar al 021 238 6777 int. 1800 o al 0981 770069",
+    },
+    # Consultas que gestiona el Departamento de Educación: precooperativa
+    # (canon y cuota) y extensión de horario en el alquiler de salones.
+    # Todavía no tenemos un número directo del área: usamos el conmutador.
+    "EDUCACION": {
+        "label": "al Departamento de Educación",
+        "contacto": (
+            "también puede llamar al (021) 552631 o acercarse a "
+            "cualquiera de nuestras sucursales"
+        ),
+    },
+    # Todo lo demás (incluidos los montos de ahorros, para los que el cliente
+    # pidió derivar sin especificar área).
+    "GENERAL": {
+        "label": "a un agente humano",
+        "contacto": (
+            "también puede llamar al (021) 552631 o acercarse a "
+            "cualquiera de nuestras sucursales"
+        ),
+    },
+}
+
+DEFAULT_DERIVATION_AREA = "GENERAL"
+
+
+def derivation_message(area: str = DEFAULT_DERIVATION_AREA) -> str:
+    """Frase de derivación completa, con la etiqueta que consume el webhook."""
+    area = area.upper()
+    if area not in DERIVATION_AREAS:
+        area = DEFAULT_DERIVATION_AREA
+    datos = DERIVATION_AREAS[area]
+    return (
+        f"[DERIVAR_HUMANO:{area}] No tengo esa información, pero voy a "
+        f"derivar su consulta {datos['label']}, que se pondrá en contacto con "
+        f"usted a la brevedad. Si lo prefiere, {datos['contacto']}."
+    )
 
 
 # === Base de conocimiento ===
@@ -100,7 +144,10 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
     # una nota TOTALMENTE neutra: cualquier mención de "no tenía el dato" o "derivó"
     # vuelve a anclar la derivación (verificado), así que el marcador no debe
     # insinuar ni derivación ni falta de datos.
-    DERIVATION_SIGNATURE = "derivar su consulta a un agente humano"
+    # Debe matchear las TRES variantes de la regla 3.1.1 (general, centro médico,
+    # educación), por eso corta antes del área: "...derivar su consulta al Centro
+    # Médico" y "...a un agente humano" comparten solo este prefijo.
+    DERIVATION_SIGNATURE = "derivar su consulta"
     DERIVATION_PLACEHOLDER = "(Respuesta a una consulta anterior.)"
 
     def format_conversation_history(history):

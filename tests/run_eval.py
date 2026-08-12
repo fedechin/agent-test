@@ -9,6 +9,9 @@ que cada respuesta cumpla lo esperado:
   - must_not_contain  : ninguno de estos textos debe aparecer.
   - expect_fallback   : la respuesta debe ser la derivación de la regla 3.1
                         (contiene alguno de los fallback_markers, p.ej. "552631").
+  - expect_area       : área a la que debe derivar (regla 3.1.1): CENTRO_MEDICO,
+                        EDUCACION o GENERAL. Verifica la etiqueta
+                        [DERIVAR_HUMANO:<AREA>] que emite el modelo.
 
 Uso:
   python3 tests/run_eval.py                 # corre todos los casos (hace llamadas a OpenAI)
@@ -57,6 +60,16 @@ def evaluate(case: dict, answer: str, fallback_markers: list) -> list:
         if not any(contains(ans, m) for m in fallback_markers):
             failures.append(
                 "se esperaba la derivación (regla 3.1) y la respuesta no la contiene"
+            )
+
+    # Área de derivación (regla 3.1.1): el cliente pidió que ciertas consultas se
+    # deriven al Centro Médico o al Depto. de Educación en vez del conmutador.
+    expected_area = case.get("expect_area")
+    if expected_area:
+        if not contains(ans, f"[DERIVAR_HUMANO:{expected_area}]"):
+            failures.append(
+                f"se esperaba la derivación al área '{expected_area}' "
+                f"(etiqueta [DERIVAR_HUMANO:{expected_area}])"
             )
 
     return failures
