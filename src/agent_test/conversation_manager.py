@@ -1,12 +1,23 @@
 """
 Conversation management and human handover logic.
 """
+import os
 import re
 from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
-from datetime import datetime
+from sqlalchemy import func
+from datetime import datetime, timedelta
 from .models import Conversation, Message, ConversationStatus, ConversationSource, HumanAgent
 from .database import get_db
+
+# Corte de sesión por inactividad. Sin esto una conversación es PERMANENTE: se crea
+# con el primer mensaje del socio y se reutiliza para siempre, porque
+# get_or_create_conversation solo excluye las RESOLVED y nada las marcaba así por su
+# cuenta. En producción llegamos a tener una conversación de 170 mensajes a lo largo
+# de 4 meses; el historial que se le inyecta al modelo salía de ahí, mezclando temas
+# de meses distintos. Al pasar el corte cerramos la vieja y abrimos una nueva, así
+# "la conversación actual" existe de verdad.
+SESSION_TIMEOUT_HOURS = float(os.getenv("CONVERSATION_SESSION_TIMEOUT_HOURS", "12"))
 
 class ConversationManager:
     """Manages conversation state and human handover."""
@@ -54,6 +65,14 @@ class ConversationManager:
             ])
         ).first()
 
+        # Si la sesión quedó inactiva más que el corte, se cierra y se arranca una
+        # nueva. El filtro de arriba ya deja fuera las RESOLVED, así que basta con
+        # marcarla y soltar la referencia para caer en la rama de creación.
+        if conversation and self.is_session_stale(conversation.id, db):
+            conversation.status = ConversationStatus.RESOLVED
+            db.commit()
+            conversation = None
+
         if not conversation:
             conversation = Conversation(
                 whatsapp_number=whatsapp_number,
@@ -70,6 +89,32 @@ class ConversationManager:
             db.commit()
 
         return conversation
+
+    def is_session_stale(self, conversation_id: int, db: Session,
+                         timeout_hours: Optional[float] = None) -> bool:
+        """True si el último mensaje de la conversación es más viejo que el corte.
+
+        Una conversación sin mensajes (recién creada) NUNCA es stale: si no, el
+        registro se cerraría antes de poder usarse.
+
+        Se compara contra datetime.utcnow() porque Message.timestamp lo escribe el
+        servidor de base de datos con func.now() y en producción (Postgres en
+        Railway) esa columna guarda UTC. Si algún día la DB corriera en otro huso,
+        este cálculo se iría por esa diferencia.
+        """
+        if timeout_hours is None:
+            timeout_hours = SESSION_TIMEOUT_HOURS
+        if timeout_hours <= 0:
+            return False
+
+        last_ts = db.query(func.max(Message.timestamp)).filter(
+            Message.conversation_id == conversation_id
+        ).scalar()
+
+        if last_ts is None:
+            return False
+
+        return (datetime.utcnow() - last_ts) > timedelta(hours=timeout_hours)
 
     def save_message(self, conversation_id: int, whatsapp_number: str,
                     message_text: str, is_from_customer: bool,

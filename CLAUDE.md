@@ -67,6 +67,9 @@ Required environment variables:
 - `SECRET_KEY` - JWT secret key for authentication (generate a strong random string)
 - `DOCS_FOLDER` - Document directory (defaults to "data")
 - `CONTEXT_FILE` - Context instructions file (defaults to "context/context.txt")
+- `CONVERSATION_HISTORY_LIMIT` - Recent messages injected as context (defaults to 10)
+- `CONVERSATION_SESSION_TIMEOUT_HOURS` - Inactivity window that closes a conversation
+  so the next message starts a fresh one (defaults to 12; 0 disables)
 
 Copy `.env.example` to `.env` and configure your values.
 
