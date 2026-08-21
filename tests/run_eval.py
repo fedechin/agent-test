@@ -12,6 +12,16 @@ que cada respuesta cumpla lo esperado:
   - expect_area       : área a la que debe derivar (regla 3.1.1): CENTRO_MEDICO,
                         EDUCACION o GENERAL. Verifica la etiqueta
                         [DERIVAR_HUMANO:<AREA>] que emite el modelo.
+  - conversation_history : turnos previos de la charla, opcional. Lista de
+                        {"role": "customer"|"assistant", "content": "..."}.
+                        Si falta, el caso corre single-turn (historial vacío).
+
+IMPORTANTE: los casos SIN conversation_history no cubren el modo en que el bot
+funciona de verdad. En WhatsApp casi siempre hay historial, y hay fallas que solo
+aparecen ahí: con historial el modelo puede dejar de leer la base y derivar un dato
+que SÍ tiene (ver los casos multiturno del Centro Médico). Al agregar un caso de
+regresión por una falla reportada en producción, reprodúzcala CON el historial que
+la disparó, no solo con la pregunta suelta.
 
 Uso:
   python3 tests/run_eval.py                 # corre todos los casos (hace llamadas a OpenAI)
@@ -103,13 +113,16 @@ def main():
         print(f"{len(cases)} casos:\n")
         for c in cases:
             tag = "FALLBACK" if c.get("expect_fallback") else c["category"].upper()
-            print(f"  [{tag:9}] {c['id']}: {c['question']}")
+            turnos = len(c.get("conversation_history", []))
+            marca = f" (+{turnos} turnos previos)" if turnos else ""
+            print(f"  [{tag:9}] {c['id']}: {c['question']}{marca}")
         return 0
 
     # Importar la cadena solo cuando vamos a usarla (evita exigir OPENAI_API_KEY para --list)
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from src.agent_test.rag_chain import build_rag_chain
+    from src.agent_test.rag_chain import build_rag_chain, MODEL_NAME
 
+    print(f"Modelo: {MODEL_NAME}  (cambiar con MODEL_NAME en el entorno)")
     print("Construyendo la cadena RAG (puede tardar la primera vez)...\n")
     qa_chain, context = build_rag_chain()
 
@@ -121,7 +134,7 @@ def main():
             response = qa_chain.invoke({
                 "query": c["question"],
                 "instructions": context,
-                "conversation_history": [],
+                "conversation_history": c.get("conversation_history", []),
             })
             answer = str(response)
         except Exception as e:  # noqa: BLE001
