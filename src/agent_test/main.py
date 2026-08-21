@@ -22,7 +22,7 @@ import json
 import httpx
 from urllib.parse import urlparse
 
-from .rag_chain import build_rag_chain, DERIVATION_AREAS, DEFAULT_DERIVATION_AREA
+from .rag_chain import build_rag_chain, DERIVATION_AREAS, DEFAULT_DERIVATION_AREA, sanitize_outgoing
 from .database import get_db, create_tables
 from .conversation_manager import ConversationManager
 from .models import ConversationStatus, ConversationSource, HumanAgent, AgentRole, Conversation, Message
@@ -170,6 +170,7 @@ def process_heavy_query_background(
         message = str(response)
         # Twilio: PENDING_HUMAN alcanza, el agente la toma desde el panel.
         message, _ = apply_handover_if_needed(message, conversation_id, db)
+        message = sanitize_outgoing(message)
 
         logger.info(f"✅ Heavy query processed: {len(message)} characters")
 
@@ -419,6 +420,7 @@ async def whatsapp_reply(
                 })
                 message = str(response)
                 message, _ = apply_handover_if_needed(message, conversation.id, db)
+                message = sanitize_outgoing(message)
                 logger.info(f"🤖 RAG response: {message}")
                 logger.debug(f"💬 Used {len(conversation_history)} messages from history")
 
@@ -494,6 +496,7 @@ def process_yeastar_message_background(
         })
         message = str(response)
         message, derived = apply_handover_if_needed(message, conversation_id, db)
+        message = sanitize_outgoing(message)
 
         logger.info(f"RAG response ready: {len(message)} characters")
 

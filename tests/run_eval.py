@@ -37,6 +37,7 @@ import json
 import os
 import sys
 import unicodedata
+from typing import Optional
 
 CASES_FILE = os.path.join(os.path.dirname(__file__), "eval_cases.json")
 
@@ -53,10 +54,19 @@ def contains(haystack_norm: str, needle: str) -> bool:
     return normalize(needle) in haystack_norm
 
 
-def evaluate(case: dict, answer: str, fallback_markers: list) -> list:
+def evaluate(case: dict, answer: str, fallback_markers: list,
+             forbidden_always: Optional[list] = None) -> list:
     """Devuelve la lista de motivos de falla. Lista vacía = caso aprobado."""
     failures = []
     ans = normalize(answer)
+
+    # Prohibiciones que valen para TODOS los casos, sin importar la categoría
+    # (regla 4.15): vocabulario interno que el socio no debería leer nunca. Sin
+    # esta verificación pasaban desapercibidas respuestas por lo demás correctas
+    # que igual le decían al socio "en la base de conocimiento…".
+    for needle in (forbidden_always or []):
+        if contains(ans, needle):
+            failures.append(f"vocabulario interno filtrado al socio: '{needle}'")
 
     for needle in case.get("must_contain", []):
         if not contains(ans, needle):
@@ -99,6 +109,7 @@ def main():
         data = json.load(f)
 
     fallback_markers = data["fallback_markers"]
+    forbidden_always = data.get("forbidden_always", [])
     cases = data["cases"]
     if args.category:
         cases = [c for c in cases if c["category"] == args.category]
@@ -120,7 +131,7 @@ def main():
 
     # Importar la cadena solo cuando vamos a usarla (evita exigir OPENAI_API_KEY para --list)
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from src.agent_test.rag_chain import build_rag_chain, MODEL_NAME
+    from src.agent_test.rag_chain import build_rag_chain, MODEL_NAME, sanitize_outgoing
 
     print(f"Modelo: {MODEL_NAME}  (cambiar con MODEL_NAME en el entorno)")
     print("Construyendo la cadena RAG (puede tardar la primera vez)...\n")
@@ -136,14 +147,16 @@ def main():
                 "instructions": context,
                 "conversation_history": c.get("conversation_history", []),
             })
-            answer = str(response)
+            # Se evalúa el texto que realmente recibe el socio, no el crudo del
+            # modelo: la app sanea el vocabulario interno antes de enviarlo.
+            answer = sanitize_outgoing(str(response))
         except Exception as e:  # noqa: BLE001
             failed += 1
             failed_cases.append((c, [f"ERROR al invocar la cadena: {e}"]))
             print(f"✗ ERROR  {c['id']}: {e}")
             continue
 
-        failures = evaluate(c, answer, fallback_markers)
+        failures = evaluate(c, answer, fallback_markers, forbidden_always)
         if failures:
             failed += 1
             failed_cases.append((c, failures))
