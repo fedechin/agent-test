@@ -22,7 +22,7 @@ import json
 import httpx
 from urllib.parse import urlparse
 
-from .rag_chain import build_rag_chain, DERIVATION_AREAS, DEFAULT_DERIVATION_AREA
+from .rag_chain import build_rag_chain, DERIVATION_AREAS, DEFAULT_DERIVATION_AREA, sanitize_outgoing
 from .database import get_db, create_tables
 from .conversation_manager import ConversationManager
 from .models import ConversationStatus, ConversationSource, HumanAgent, AgentRole, Conversation, Message
@@ -99,19 +99,26 @@ qa_chain, context = build_rag_chain()
 # área, tratamos la derivación como GENERAL en vez de perderla.
 HANDOVER_MARKER_RE = re.compile(r"\[DERIVAR_HUMANO(?::([A-Z_]+))?\]")
 
-def apply_handover_if_needed(message: str, conversation_id: int, db) -> str:
+def apply_handover_if_needed(message: str, conversation_id: int, db) -> tuple:
     """Si el agente IA señaló que no tiene la información, deriva la conversación
-    a un agente humano (PENDING_HUMAN) y elimina la etiqueta del mensaje."""
+    a un agente humano (PENDING_HUMAN) y elimina la etiqueta del mensaje.
+
+    Devuelve (mensaje_limpio, derivó). El segundo valor importa porque en Yeastar
+    marcar PENDING_HUMAN no alcanza: hay que transferir la sesión a la PBX, que es
+    donde el humano la atiende. Quien llama decide qué hacer con esa señal.
+    """
     match = HANDOVER_MARKER_RE.search(message)
-    if match:
-        area = (match.group(1) or DEFAULT_DERIVATION_AREA).upper()
-        if area not in DERIVATION_AREAS:
-            logger.warning(f"Área de derivación desconocida '{area}' - se usa {DEFAULT_DERIVATION_AREA}")
-            area = DEFAULT_DERIVATION_AREA
-        conversation_manager.request_human_takeover(conversation_id, db)
-        message = HANDOVER_MARKER_RE.sub("", message).strip()
-        logger.info(f"🔄 Sin información en la base - derivación a '{area}' solicitada para conversación {conversation_id}")
-    return message
+    if not match:
+        return message, False
+
+    area = (match.group(1) or DEFAULT_DERIVATION_AREA).upper()
+    if area not in DERIVATION_AREAS:
+        logger.warning(f"Área de derivación desconocida '{area}' - se usa {DEFAULT_DERIVATION_AREA}")
+        area = DEFAULT_DERIVATION_AREA
+    conversation_manager.request_human_takeover(conversation_id, db)
+    message = HANDOVER_MARKER_RE.sub("", message).strip()
+    logger.info(f"🔄 Sin información en la base - derivación a '{area}' solicitada para conversación {conversation_id}")
+    return message, True
 
 # === Heavy Query Detection ===
 def is_heavy_query(query: str) -> bool:
@@ -161,7 +168,9 @@ def process_heavy_query_background(
             "conversation_history": conversation_history
         })
         message = str(response)
-        message = apply_handover_if_needed(message, conversation_id, db)
+        # Twilio: PENDING_HUMAN alcanza, el agente la toma desde el panel.
+        message, _ = apply_handover_if_needed(message, conversation_id, db)
+        message = sanitize_outgoing(message)
 
         logger.info(f"✅ Heavy query processed: {len(message)} characters")
 
@@ -410,7 +419,8 @@ async def whatsapp_reply(
                     "conversation_history": conversation_history
                 })
                 message = str(response)
-                message = apply_handover_if_needed(message, conversation.id, db)
+                message, _ = apply_handover_if_needed(message, conversation.id, db)
+                message = sanitize_outgoing(message)
                 logger.info(f"🤖 RAG response: {message}")
                 logger.debug(f"💬 Used {len(conversation_history)} messages from history")
 
@@ -485,7 +495,8 @@ def process_yeastar_message_background(
             "conversation_history": conversation_history
         })
         message = str(response)
-        message = apply_handover_if_needed(message, conversation_id, db)
+        message, derived = apply_handover_if_needed(message, conversation_id, db)
+        message = sanitize_outgoing(message)
 
         logger.info(f"RAG response ready: {len(message)} characters")
 
@@ -503,6 +514,21 @@ def process_yeastar_message_background(
             except Exception as yeastar_error:
                 logger.exception(f"Yeastar API error: {yeastar_error}")
                 _send_yeastar_fallback(session_id, "yeastar_send_failed")
+
+            # La IA dijo "voy a derivar su consulta": hay que cumplirlo. Antes esto
+            # solo marcaba PENDING_HUMAN en nuestra base, estado que en Yeastar no
+            # mira nadie (get_pending_conversations filtra source != YEASTAR), así
+            # que la derivación moría ahí y la conversación seguía abierta
+            # acumulando historial. El transfer va DESPUÉS del send_message para que
+            # el socio lea la respuesta antes de pasar a la cola.
+            if derived:
+                try:
+                    asyncio.run(yeastar_client.transfer_session(session_id))
+                    logger.info(f"Yeastar: session {session_id} transferred after AI derivation")
+                except Exception as transfer_err:
+                    logger.error(f"Yeastar: transfer failed after AI derivation: {transfer_err}")
+                finally:
+                    conversation_manager.end_conversation(conversation_id, db)
         else:
             logger.warning("Yeastar client not configured - response saved to DB only")
 
@@ -624,11 +650,14 @@ async def yeastar_webhook(
                 await yeastar_client.send_message(session_id, escalation_msg)
                 try:
                     await yeastar_client.transfer_session(session_id)
-                    # Mark as resolved - Yeastar/Linkus handles it from here
-                    conversation_manager.end_conversation(conversation.id, db)
                     logger.info(f"Yeastar: session {session_id} transferred to human queue")
                 except Exception as transfer_err:
                     logger.error(f"Yeastar: transfer failed: {transfer_err}")
+                finally:
+                    # Se cierra pase lo que pase: aunque el transfer falle, para
+                    # nosotros la conversación terminó y no queremos que sus mensajes
+                    # sigan alimentando el historial de la próxima consulta.
+                    conversation_manager.end_conversation(conversation.id, db)
 
             return JSONResponse(content={"status": "ok"})
 
@@ -650,11 +679,11 @@ async def yeastar_webhook(
                 await yeastar_client.send_message(session_id, handover_msg)
                 try:
                     await yeastar_client.transfer_session(session_id)
-                    # Mark as resolved - Yeastar/Linkus handles it from here
-                    conversation_manager.end_conversation(conversation.id, db)
                     logger.info(f"Yeastar: session {session_id} transferred for human handover")
                 except Exception as transfer_err:
                     logger.error(f"Yeastar: transfer failed: {transfer_err}")
+                finally:
+                    conversation_manager.end_conversation(conversation.id, db)
 
             return JSONResponse(content={"status": "ok"})
 

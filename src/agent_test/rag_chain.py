@@ -74,6 +74,56 @@ def derivation_message(area: str = DEFAULT_DERIVATION_AREA) -> str:
     )
 
 
+# === Saneamiento del texto de salida ===
+# El modelo a veces le habla al socio de "la base de conocimiento" ("son 12
+# especialidades listadas en la base de conocimiento"). El socio no sabe que existe
+# una base: le suena a excusa y expone cómo trabajamos por dentro. Pasa incluso en
+# respuestas por lo demás correctas.
+#
+# Esto se resuelve reescribiendo el texto, NO instruyendo al modelo: se probó una
+# regla en el prompt que prohibía nombrar la base y salió peor, porque la frase
+# canónica de derivación ("No tengo esa información…") es ella misma lenguaje de
+# ausencia y el modelo terminó evitándola. Medido: dos casos kb_gap que estaban 4/4
+# cayeron a 0/3. Acá solo cambiamos palabras, nunca decidimos derivar ni escalar,
+# así que no puede alterar ese comportamiento.
+#
+# El orden importa: las variantes más largas van primero para que "en la base de
+# conocimiento" no lo capture antes la regla corta de "en la base".
+_SANITIZE_RULES = [
+    (r"\bde\s+la\s+base\s+de\s+conocimiento\b", "de nuestra información"),
+    (r"\ben\s+la\s+base\s+de\s+conocimiento\b", "en nuestra información"),
+    (r"\ben\s+esta\s+base\s+de\s+conocimiento\b", "en nuestra información"),
+    (r"\bla\s+base\s+de\s+conocimiento\b", "nuestra información"),
+    (r"\besta\s+base\s+de\s+conocimiento\b", "nuestra información"),
+    (r"\bbase\s+de\s+conocimiento\b", "nuestra información"),
+    (r"\ben\s+esta\s+base\b", "en nuestra información"),
+    (r"\ben\s+la\s+base\b", "en nuestra información"),
+    (r"\besta\s+base\b", "nuestra información"),
+    (r"\bmi\s+base\s+de\s+datos\b", "nuestra información"),
+]
+
+_SANITIZE_COMPILED = [(re.compile(p, re.IGNORECASE), r) for p, r in _SANITIZE_RULES]
+
+
+def sanitize_outgoing(message: str) -> str:
+    """Reemplaza vocabulario interno por términos que el socio pueda leer.
+
+    Preserva la mayúscula inicial: "La base de conocimiento no especifica…" queda
+    como "Nuestra información no especifica…", no en minúscula a mitad de oración.
+    """
+    if not message:
+        return message
+
+    def _replace(match, replacement):
+        if match.group(0)[:1].isupper():
+            return replacement[:1].upper() + replacement[1:]
+        return replacement
+
+    for pattern, replacement in _SANITIZE_COMPILED:
+        message = pattern.sub(lambda m, r=replacement: _replace(m, r), message)
+    return message
+
+
 # === Base de conocimiento ===
 # La base es chica (~8k tokens): entra entera en el contexto del modelo muchas
 # veces. Por eso NO usamos recuperación vectorial (FAISS/BM25): buscar fragmentos

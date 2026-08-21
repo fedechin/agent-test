@@ -106,15 +106,48 @@ Afecta hoy a `gap-rueda-de-ahorros` y, de forma intermitente, a
 esta base"* en lugar de emitir `[DERIVAR_HUMANO:<AREA>]`. Sin etiqueta, el webhook
 **no escala** la conversación: el socio queda sin agente humano.
 
-Es flaky (falla ~1 de cada 3 corridas), no determinístico, y **precede** al cambio
-de modelo/prompt de esta rama.
+Medido sobre 4 corridas: `gap-rueda-de-ahorros` 2/4, `gap-salones-alquilar-country`
+3/4. El resto de los `kb_gap` da 4/4. Es flaky, no determinístico, y **precede** al
+cambio de modelo/prompt.
 
-La causa está en el texto de la KB, no en el prompt: `BC_..._General.md:409` dice
-literalmente *"NO figuran en esta base"*, y el modelo lo copia — es la regla 4.14
-disparada por la propia KB.
+### Dos intentos de arreglo que FALLARON — no repetirlos
 
-- [ ] Reescribir esas líneas de la KB para que no ofrezcan una frase de "ausencia"
-      copiable. Marcar el hueco sin redactarlo como respuesta.
+Ambos se midieron y se revirtieron. Quedan documentados porque parecen buenas ideas
+y no lo son:
+
+1. **Reescribir los huecos de la KB** con un marcador `[HUECO — DERIVAR: AREA]` en
+   lugar de la prosa *"NO figuran en esta base"*. Resultado: **peor** (33/36). Esa
+   prosa era justamente la señal que le hacía reconocer el hueco; sin ella el modelo
+   improvisa paráfrasis y no emite la etiqueta.
+
+2. **Regla en el prompt prohibiendo nombrar la base** ("nunca diga 'base de
+   conocimiento'; si falta el dato, emita la etiqueta"). Resultado: **mucho peor**.
+   `gap-ahorro-infantil-max` y `gap-ahorro-vista-min` cayeron de 4/4 a **0/3**, y
+   `gap-rueda` de 2/4 a 0/3. La razón: la frase canónica de derivación *"No tengo esa
+   información…"* ES lenguaje de ausencia, así que la prohibición se la comió.
+
+La lección: **no se le puede prohibir al modelo hablar de la ausencia sin romper la
+derivación**, porque derivar es la forma correcta de hablar de la ausencia.
+
+### Lo que sí se resolvió
+
+El síntoma cosmético —que el socio leyera *"listadas en la base de conocimiento"*—
+se arregló **fuera del modelo**, con `sanitize_outgoing()` en `rag_chain.py`, que
+reescribe el texto antes de enviarlo. Como solo cambia palabras y nunca decide
+escalar, no puede alterar las derivaciones. Verificado: el caso afectado pasó de
+0/3 a 3/3 sin mover ningún otro. Lo vigila `forbidden_always` en `eval_cases.json`.
+
+### Lo que sigue abierto
+
+La falta de etiqueta en `gap-rueda-de-ahorros`. Sin etiqueta el webhook no escala y
+el socio queda sin nadie que lo atienda.
+
+- [ ] Conseguir del cliente el mecanismo real de la Rueda de Ahorro. Con el dato
+      cargado el caso deja de ser un hueco y el problema desaparece de raíz.
+- [ ] Si el dato no llega: evaluar una red en código que fuerce la derivación. Ya se
+      descartó una versión basada en detectar frases de ausencia — pisaba respuestas
+      correctas (ver historial). Tendría que apoyarse en "no entregó ningún dato",
+      no en el vocabulario.
 
 ---
 
