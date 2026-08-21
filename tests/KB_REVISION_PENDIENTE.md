@@ -99,6 +99,23 @@ docx **no contiene nada** sobre alquilar el Country. Sigue siendo un hueco.
 - [ ] Los 53 subsidios están en `data/Subsidios_2026.md`. Si el bot trae solo algunos,
       es problema de **recuperación**, no de contenido (cubierto por `ret-subsidios-listado`).
 
+## 7. Casos `kb_gap` que parafrasean en vez de emitir la etiqueta
+
+Afecta hoy a `gap-rueda-de-ahorros` y, de forma intermitente, a
+`gap-salones-alquilar-country`. El modelo responde *"el mecanismo … NO figura en
+esta base"* en lugar de emitir `[DERIVAR_HUMANO:<AREA>]`. Sin etiqueta, el webhook
+**no escala** la conversación: el socio queda sin agente humano.
+
+Es flaky (falla ~1 de cada 3 corridas), no determinístico, y **precede** al cambio
+de modelo/prompt de esta rama.
+
+La causa está en el texto de la KB, no en el prompt: `BC_..._General.md:409` dice
+literalmente *"NO figuran en esta base"*, y el modelo lo copia — es la regla 4.14
+disparada por la propia KB.
+
+- [ ] Reescribir esas líneas de la KB para que no ofrezcan una frase de "ausencia"
+      copiable. Marcar el hueco sin redactarlo como respuesta.
+
 ---
 
 ## Nota sobre el Departamento de Educación

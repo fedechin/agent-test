@@ -265,6 +265,48 @@
       ]
     },
     {
+      "id": "pos-centro-medico-numero-reservas-multiturno",
+      "category": "positive",
+      "question": "¿A qué número tengo que llamar para reservar un turno en el centro médico?",
+      "notes": "REGRESION (feedback partner ago26). Identico a pos-centro-medico-numero-reservas pero CON historial: ahi es donde fallaba. Con gpt-4o-mini el modelo dejaba de leer la KB y caia en la regla 4.12c, devolviendo la derivacion CENTRO_MEDICO (que incluye el mismo numero, por eso el sintoma confunde). Con gpt-4.1-mini responde bien. Single-turn NO detecta esta falla.",
+      "conversation_history": [
+        {"role": "customer", "content": "Hola, buenas tardes"},
+        {"role": "assistant", "content": "¡Buenas tardes! ¿En qué puedo ayudarle hoy? 😊"},
+        {"role": "customer", "content": "¿Qué tipos de crédito tienen?"},
+        {"role": "assistant", "content": "En la Cooperativa Multiactiva Nazareth ofrecemos varios tipos de crédito: **Crédito Ordinario** (hasta Gs. 100.000.000), **Crédito de Consumo**, **Crédito para Vivienda**, **Crédito Agrícola** y **Crédito Estacional**. ¿Sobre cuál de estos le gustaría más detalle? *Juntos crecemos.*"},
+        {"role": "customer", "content": "Ah ok, después vemos eso"},
+        {"role": "assistant", "content": "Sin problema. ¿Hay algo más en lo que pueda ayudarle?"},
+        {"role": "customer", "content": "¿El centro médico qué especialidades tiene?"},
+        {"role": "assistant", "content": "El Centro Médico cuenta con Clínica Médica, Endocrinología, Fonoaudiología, Ginecología, Mastología, Nutrición, Odontología, Pediatría, Psicopedagogía, Traumatología y Urología. ¿Le interesa alguna?"}
+      ],
+      "must_contain": [
+        "238 6777"
+      ],
+      "must_not_contain": [
+        "[DERIVAR_HUMANO",
+        "no tengo esa informaci"
+      ]
+    },
+    {
+      "id": "pos-centro-medico-turno-seguimiento",
+      "category": "positive",
+      "question": "¿A qué número tengo que llamar para reservar un turno en el centro médico?",
+      "notes": "REGRESION (feedback partner ago26). El socio ya dijo 'quiero sacar un turno' y recibio la linea generica de la KB ('via telefonica o por los canales habilitados'), que es justo el ejemplo que la regla 4.12b usaba como dato insuficiente. Al pedir el numero concreto el modelo derivaba en vez de darlo.",
+      "conversation_history": [
+        {"role": "customer", "content": "¿El centro médico atiende pediatría?"},
+        {"role": "assistant", "content": "Sí, el Centro Médico cuenta con **Pediatría** y también Pediatría / Nefrología entre sus especialidades. 👶"},
+        {"role": "customer", "content": "Quiero sacar un turno"},
+        {"role": "assistant", "content": "Las reservas de turnos se realizan vía telefónica o por los canales habilitados."}
+      ],
+      "must_contain": [
+        "238 6777"
+      ],
+      "must_not_contain": [
+        "[DERIVAR_HUMANO",
+        "no tengo esa informaci"
+      ]
+    },
+    {
       "id": "pos-centro-medico-especialidades",
       "category": "positive",
       "question": "¿Cuáles son las especialidades del centro médico?",
@@ -297,6 +339,20 @@
       "expect_fallback": true,
       "notes": "Cliente 07jul26: \"Ante consulta sobre los costos se debe derivar al centro medico\".",
       "expect_area": "CENTRO_MEDICO"
+    },
+    {
+      "id": "gap-centro-medico-costos-multiturno",
+      "category": "kb_gap",
+      "question": "¿Y cuánto me sale la consulta?",
+      "expect_fallback": true,
+      "expect_area": "CENTRO_MEDICO",
+      "notes": "Contrapeso de los casos multiturno de arriba: al arreglar la sobre-derivacion no hay que romper la derivacion legitima. El costo NO esta en la KB, asi que aun con historial (y con la pregunta elidida, apoyada en el turno anterior) debe derivar al Centro Medico.",
+      "conversation_history": [
+        {"role": "customer", "content": "¿El centro médico atiende pediatría?"},
+        {"role": "assistant", "content": "Sí, el Centro Médico cuenta con **Pediatría** y también Pediatría / Nefrología entre sus especialidades. 👶"},
+        {"role": "customer", "content": "Quiero llevar a mi hijo"},
+        {"role": "assistant", "content": "Para reservar un turno puede llamar al **021 238 6777 int. 1800** o al **0981 770069**. 📞"}
+      ]
     },
     {
       "id": "gap-centro-medico-dias-horarios",

@@ -12,6 +12,12 @@ load_dotenv()
 DATA_DIR = os.getenv("DOCS_FOLDER", "data")
 CONTEXT_PATH = os.getenv("CONTEXT_FILE", "context/context.txt")
 
+# Modelo de chat. Se puede cambiar por entorno (MODEL_NAME) para hacer A/B sin
+# tocar el código. gpt-4.1-mini sigue mejor las instrucciones y aprovecha mejor el
+# contexto largo que gpt-4o-mini, que es lo que importa acá: inyectamos la base de
+# conocimiento entera en cada llamada.
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
+
 # Áreas de derivación (regla 3.1 del contexto) para cuando no hay información.
 # La etiqueta va como [DERIVAR_HUMANO:<AREA>]: el webhook la detecta para escalar
 # la conversación (request_human_takeover) y luego la elimina del texto antes de
@@ -100,7 +106,7 @@ def load_context(context_path=CONTEXT_PATH):
 
 
 # === Custom RAG Chain ===
-def build_rag_chain(context_path=CONTEXT_PATH, model_name="gpt-4o-mini"):
+def build_rag_chain(context_path=CONTEXT_PATH, model_name=MODEL_NAME):
     knowledge_base = load_knowledge_base()
     context = load_context(context_path)
 

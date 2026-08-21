@@ -59,6 +59,7 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
 
 Required environment variables:
 - `OPENAI_API_KEY` - OpenAI API key for embeddings and chat completion
+- `MODEL_NAME` - Chat model name (defaults to `gpt-4.1-mini`; was `gpt-4o-mini`)
 - `TWILIO_ACCOUNT_SID` - Twilio Account SID for WhatsApp integration
 - `TWILIO_AUTH_TOKEN` - Twilio Auth Token
 - `TWILIO_WHATSAPP_FROM` - Twilio WhatsApp phone number (format: whatsapp:+1234567890)
