@@ -39,7 +39,10 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
 3. **WhatsApp Integration**: Twilio webhook at `/whatsapp` endpoint returning TwiML responses
 4. **Context Instructions**: Agent behavior defined in `context/context.txt` for Cooperativa Multiactiva Nazareth
 5. **Conversation History**: PostgreSQL database storing all conversations and messages
-6. **Human Handover**: Automatic detection of requests for human assistance
+6. **Human Handover**: Automatic detection of requests for human assistance. When the
+   AI lacks a fact it does **not** transfer straight away: it offers to derive and waits
+   for the member to confirm (`pending_derivation_area` on `conversations`). Explicit
+   requests for a human and incoming media still transfer immediately.
 7. **Media Handling**: Automatic detection and storage of images, documents, videos, and audio files
 8. **Agent Panel**: Secure interface at `/panel` for human agents to manage conversations
 9. **Role-Based Access Control**: Admin and agent roles with restricted access to agent management features
@@ -105,6 +108,8 @@ alembic upgrade head
 **Migration History:**
 1. `4bf8c2a7d7c6` - Add role column to human_agents table (Admin/Agent roles)
 2. `5c3d8f9a2b1e` - Add media fields to messages table (num_media, media_urls, media_content_types)
+3. `7a1b3c5d9e2f` - Add source and yeastar_session_id to conversations
+4. `8b2c4d6e1a3f` - Add pending_derivation_area to conversations (confirmación antes de derivar)
 
 ## Media Handling
 

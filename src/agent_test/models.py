@@ -34,6 +34,11 @@ class Conversation(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     human_agent_id = Column(String(50), nullable=True)
+    # Área (CENTRO_MEDICO / EDUCACION / GENERAL) de una derivación ofrecida al socio
+    # y todavía sin respuesta. NULL = no hay ninguna pendiente. Se llena cuando la IA
+    # no encuentra un dato y ofrece derivar; el siguiente mensaje del socio la
+    # confirma (se transfiere) o la descarta (se limpia y seguimos conversando).
+    pending_derivation_area = Column(String(30), nullable=True)
 
 class Message(Base):
     __tablename__ = "messages"

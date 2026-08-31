@@ -74,6 +74,30 @@ def derivation_message(area: str = DEFAULT_DERIVATION_AREA) -> str:
     )
 
 
+def derivation_offer_message(area: str = DEFAULT_DERIVATION_AREA) -> str:
+    """Ofrece derivar y espera la confirmación del socio, en vez de transferir ya.
+
+    Transferir apenas falta un dato termina la conversación entera: se transfiere la
+    sesión a la PBX y se cierra, así que el socio pierde al bot para todo lo demás
+    aunque solo una de sus consultas tuviera un hueco. Preguntando primero, una
+    derivación de más cuesta una repregunta en lugar de ocupar a una persona.
+
+    El teléfono va igual en el mensaje: si el socio prefiere llamar, no necesita
+    esperar a que nadie lo contacte. NO lleva la etiqueta [DERIVAR_HUMANO:...]
+    porque no se está derivando todavía.
+    """
+    area = area.upper()
+    if area not in DERIVATION_AREAS:
+        area = DEFAULT_DERIVATION_AREA
+    datos = DERIVATION_AREAS[area]
+    return (
+        f"No tengo esa información. ¿Quiere que derive su consulta "
+        f"{datos['label']} para que se pongan en contacto con usted? "
+        f"Si lo prefiere, {datos['contacto']}.\n\n"
+        f"También puede seguir consultándome sobre otros temas."
+    )
+
+
 # === Saneamiento del texto de salida ===
 # El modelo a veces le habla al socio de "la base de conocimiento" ("son 12
 # especialidades listadas en la base de conocimiento"). El socio no sabe que existe

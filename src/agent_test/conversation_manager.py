@@ -3,6 +3,7 @@ Conversation management and human handover logic.
 """
 import os
 import re
+import unicodedata
 from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -51,6 +52,82 @@ class ConversationManager:
             # English
             "speak to human", "talk to human", "human agent", "transfer to human"
         ]
+
+        # Respuestas con las que el socio ACEPTA que lo derivemos. Se comparan sobre
+        # el mensaje completo normalizado (sin tildes ni signos), no por substring:
+        # "si" como substring aparece en "necesito", "siempre", "servicio"...
+        self.affirmative_replies = {
+            "si", "sii", "siii", "sip", "si por favor", "si porfa", "si porfavor",
+            "si gracias", "si dale", "si quiero", "si necesito", "claro", "claro que si",
+            "dale", "dale gracias", "ok", "oka", "okey", "okay", "bueno", "buenisimo",
+            "perfecto", "listo", "de una", "obvio", "por favor", "porfa", "porfavor",
+            "quiero", "necesito", "me gustaria", "comunicame", "comunicame por favor",
+            "transferime", "pasame", "conectame", "yes", "sure",
+            "si quiero hablar con un agente", "si comunicame", "si transferime",
+        }
+
+        # Respuestas con las que el socio RECHAZA la derivación. Se listan aparte
+        # (en vez de tratar "todo lo que no es sí" como no) para poder loguear la
+        # diferencia entre un no explícito y un cambio de tema.
+        self.negative_replies = {
+            "no", "nop", "no gracias", "no por ahora", "ahora no", "todavia no",
+            "despues", "mas tarde", "luego", "no hace falta", "no es necesario",
+            "esta bien asi", "no quiero", "nada mas", "no nada", "listo gracias",
+            "gracias", "muchas gracias", "ok gracias", "no thanks", "no thank you",
+        }
+
+    @staticmethod
+    def _normalize_reply(text: Optional[str]) -> str:
+        """Minúsculas, sin tildes, sin signos ni espacios de más."""
+        if not text:
+            return ""
+        text = unicodedata.normalize("NFD", text.lower().strip())
+        text = "".join(c for c in text if unicodedata.category(c) != "Mn")
+        text = re.sub(r"[^\w\s]", " ", text)
+        return re.sub(r"\s+", " ", text).strip()
+
+    def interpret_derivation_reply(self, message_text: Optional[str]) -> str:
+        """Interpreta la respuesta del socio a "¿quiere que lo derive?".
+
+        Devuelve "yes", "no" u "other" (el socio ignoró la pregunta y consultó otra
+        cosa). Ante la duda devuelve "other", NUNCA "yes": transferir de más ocupa a
+        una persona y corta la conversación, mientras que no transferir solo cuesta
+        que el socio lo pida de nuevo. Ese es el error barato.
+        """
+        norm = self._normalize_reply(message_text)
+        if not norm:
+            return "other"
+        if norm in self.affirmative_replies:
+            return "yes"
+        if norm in self.negative_replies:
+            return "no"
+        # Mensajes cortos que arrancan afirmando ("si por favor derivame", "dale
+        # gracias"). El tope de palabras evita capturar una pregunta nueva que
+        # casualmente empiece con "si" ("si tengo 3 créditos, cuánto pago?").
+        palabras = norm.split()
+        if len(palabras) <= 4 and palabras[0] in {"si", "sii", "dale", "ok", "okey", "claro", "bueno"}:
+            return "yes"
+        if len(palabras) <= 4 and palabras[0] in {"no", "nop"}:
+            return "no"
+        return "other"
+
+    def set_pending_derivation(self, conversation_id: int, area: str, db: Session) -> None:
+        """Registra que se le ofreció al socio derivar al área indicada."""
+        conversation = db.query(Conversation).filter(
+            Conversation.id == conversation_id
+        ).first()
+        if conversation:
+            conversation.pending_derivation_area = area
+            db.commit()
+
+    def clear_pending_derivation(self, conversation_id: int, db: Session) -> None:
+        """Descarta la derivación ofrecida (el socio dijo que no o cambió de tema)."""
+        conversation = db.query(Conversation).filter(
+            Conversation.id == conversation_id
+        ).first()
+        if conversation and conversation.pending_derivation_area:
+            conversation.pending_derivation_area = None
+            db.commit()
 
     def get_or_create_conversation(self, whatsapp_number: str, db: Session,
                                     source: ConversationSource = ConversationSource.TWILIO,

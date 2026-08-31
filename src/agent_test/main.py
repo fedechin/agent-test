@@ -22,7 +22,10 @@ import json
 import httpx
 from urllib.parse import urlparse
 
-from .rag_chain import build_rag_chain, DERIVATION_AREAS, DEFAULT_DERIVATION_AREA, sanitize_outgoing
+from .rag_chain import (
+    build_rag_chain, DERIVATION_AREAS, DEFAULT_DERIVATION_AREA,
+    sanitize_outgoing, derivation_offer_message,
+)
 from .database import get_db, create_tables
 from .conversation_manager import ConversationManager
 from .models import ConversationStatus, ConversationSource, HumanAgent, AgentRole, Conversation, Message
@@ -100,25 +103,37 @@ qa_chain, context = build_rag_chain()
 HANDOVER_MARKER_RE = re.compile(r"\[DERIVAR_HUMANO(?::([A-Z_]+))?\]")
 
 def apply_handover_if_needed(message: str, conversation_id: int, db) -> tuple:
-    """Si el agente IA señaló que no tiene la información, deriva la conversación
-    a un agente humano (PENDING_HUMAN) y elimina la etiqueta del mensaje.
+    """Si el agente IA señaló que no tiene la información, OFRECE derivar y espera
+    la confirmación del socio, en vez de transferir de inmediato.
 
-    Devuelve (mensaje_limpio, derivó). El segundo valor importa porque en Yeastar
-    marcar PENDING_HUMAN no alcanza: hay que transferir la sesión a la PBX, que es
-    donde el humano la atiende. Quien llama decide qué hacer con esa señal.
+    Antes se transfería apenas aparecía la etiqueta, y como transferir cierra la
+    conversación, un solo dato faltante terminaba la sesión entera: el socio perdía
+    al bot para el resto de sus consultas. Además el modelo deriva de más (medido),
+    así que cada falso positivo ocupaba a una persona. Ahora preguntamos primero.
+
+    Devuelve (mensaje_para_el_socio, area_ofrecida | None). El área sirve para
+    loguear; la transferencia real ocurre después, si el socio confirma.
+
+    Ojo: esto NO aplica a los pedidos explícitos de humano ni a los archivos
+    adjuntos, que se siguen transfiriendo de una — ahí el socio ya dijo qué quiere.
     """
     match = HANDOVER_MARKER_RE.search(message)
     if not match:
-        return message, False
+        return message, None
 
     area = (match.group(1) or DEFAULT_DERIVATION_AREA).upper()
     if area not in DERIVATION_AREAS:
         logger.warning(f"Área de derivación desconocida '{area}' - se usa {DEFAULT_DERIVATION_AREA}")
         area = DEFAULT_DERIVATION_AREA
-    conversation_manager.request_human_takeover(conversation_id, db)
-    message = HANDOVER_MARKER_RE.sub("", message).strip()
-    logger.info(f"🔄 Sin información en la base - derivación a '{area}' solicitada para conversación {conversation_id}")
-    return message, True
+
+    # Se registra la oferta pero la conversación sigue en ACTIVE_AI: todavía no hay
+    # nada que un humano deba atender.
+    conversation_manager.set_pending_derivation(conversation_id, area, db)
+    logger.info(
+        f"🤔 Sin información en la base - se OFRECE derivar a '{area}' "
+        f"para conversación {conversation_id} (pendiente de confirmación)"
+    )
+    return derivation_offer_message(area), area
 
 # === Heavy Query Detection ===
 def is_heavy_query(query: str) -> bool:
@@ -495,7 +510,9 @@ def process_yeastar_message_background(
             "conversation_history": conversation_history
         })
         message = str(response)
-        message, derived = apply_handover_if_needed(message, conversation_id, db)
+        # Si falta el dato esto devuelve la OFERTA de derivar, no la derivación: la
+        # transferencia ocurre en el webhook, cuando el socio confirma.
+        message, offered_area = apply_handover_if_needed(message, conversation_id, db)
         message = sanitize_outgoing(message)
 
         logger.info(f"RAG response ready: {len(message)} characters")
@@ -515,20 +532,14 @@ def process_yeastar_message_background(
                 logger.exception(f"Yeastar API error: {yeastar_error}")
                 _send_yeastar_fallback(session_id, "yeastar_send_failed")
 
-            # La IA dijo "voy a derivar su consulta": hay que cumplirlo. Antes esto
-            # solo marcaba PENDING_HUMAN en nuestra base, estado que en Yeastar no
-            # mira nadie (get_pending_conversations filtra source != YEASTAR), así
-            # que la derivación moría ahí y la conversación seguía abierta
-            # acumulando historial. El transfer va DESPUÉS del send_message para que
-            # el socio lea la respuesta antes de pasar a la cola.
-            if derived:
-                try:
-                    asyncio.run(yeastar_client.transfer_session(session_id))
-                    logger.info(f"Yeastar: session {session_id} transferred after AI derivation")
-                except Exception as transfer_err:
-                    logger.error(f"Yeastar: transfer failed after AI derivation: {transfer_err}")
-                finally:
-                    conversation_manager.end_conversation(conversation_id, db)
+            # Acá NO se transfiere: si faltaba el dato, lo que se acaba de enviar es
+            # la pregunta "¿quiere que lo derive?". La transferencia la dispara el
+            # webhook cuando llega la confirmación (_confirm_yeastar_derivation).
+            if offered_area:
+                logger.info(
+                    f"Yeastar: oferta de derivación a '{offered_area}' enviada en "
+                    f"session {session_id}, esperando confirmación del socio"
+                )
         else:
             logger.warning("Yeastar client not configured - response saved to DB only")
 
@@ -665,6 +676,59 @@ async def yeastar_webhook(
         if conversation.status == ConversationStatus.RESOLVED:
             logger.info(f"Yeastar: conversation {conversation.id} already resolved/transferred")
             return JSONResponse(content={"status": "ok"})
+
+        # ¿Veníamos de ofrecerle una derivación? Entonces este mensaje es su
+        # respuesta. Se evalúa ANTES del RAG: si confirma, no hay nada que consultar.
+        pending_area = conversation.pending_derivation_area
+        if pending_area:
+            respuesta = conversation_manager.interpret_derivation_reply(msg_body)
+
+            if respuesta == "yes":
+                confirm_msg = (
+                    "Perfecto, derivo su consulta ahora. Un agente se pondrá en "
+                    "contacto con usted a la brevedad."
+                )
+                conversation_manager.save_message(
+                    conversation.id, whatsapp_number, confirm_msg,
+                    is_from_customer=False, sender_type="ai", db=db
+                )
+                conversation_manager.request_human_takeover(conversation.id, db)
+
+                if yeastar_client.is_configured:
+                    await yeastar_client.send_message(session_id, confirm_msg)
+                    try:
+                        await yeastar_client.transfer_session(session_id)
+                        logger.info(
+                            f"Yeastar: session {session_id} transferida a '{pending_area}' "
+                            f"tras confirmación del socio"
+                        )
+                    except Exception as transfer_err:
+                        logger.error(f"Yeastar: transfer failed tras confirmación: {transfer_err}")
+                    finally:
+                        conversation_manager.clear_pending_derivation(conversation.id, db)
+                        conversation_manager.end_conversation(conversation.id, db)
+
+                return JSONResponse(content={"status": "ok"})
+
+            # "no" o "other": la oferta caduca y seguimos conversando. En el caso
+            # "other" el socio directamente preguntó otra cosa, así que su mensaje
+            # sigue de largo hacia el RAG como una consulta normal.
+            conversation_manager.clear_pending_derivation(conversation.id, db)
+            logger.info(
+                f"Yeastar: oferta de derivación a '{pending_area}' descartada "
+                f"(respuesta='{respuesta}') en conversación {conversation.id}"
+            )
+            if respuesta == "no":
+                decline_msg = (
+                    "Sin problema. ¿Hay algo más en lo que pueda ayudarle? 😊"
+                )
+                conversation_manager.save_message(
+                    conversation.id, whatsapp_number, decline_msg,
+                    is_from_customer=False, sender_type="ai", db=db
+                )
+                if yeastar_client.is_configured:
+                    await yeastar_client.send_message(session_id, decline_msg)
+                return JSONResponse(content={"status": "ok"})
 
         # Check if customer wants human - transfer via Yeastar
         if conversation_manager.should_handover_to_human(msg_body):
