@@ -43,7 +43,10 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
    AI lacks a fact it does **not** transfer straight away: it offers to derive and waits
    for the member to confirm (`pending_derivation_area` on `conversations`). Explicit
    requests for a human and incoming media still transfer immediately.
-7. **Media Handling**: Automatic detection and storage of images, documents, videos, and audio files
+7. **Media Handling**: Automatic detection and storage of images, documents, videos, and audio files.
+   **Voice notes are transcribed** (`transcription.py`) and flow through the normal text
+   pipeline; every other attachment — and any audio that fails to download or transcribe —
+   still escalates to a human.
 8. **Agent Panel**: Secure interface at `/panel` for human agents to manage conversations
 9. **Role-Based Access Control**: Admin and agent roles with restricted access to agent management features
 
@@ -73,6 +76,9 @@ Required environment variables:
 - `CONVERSATION_HISTORY_LIMIT` - Recent messages injected as context (defaults to 10)
 - `CONVERSATION_SESSION_TIMEOUT_HOURS` - Inactivity window that closes a conversation
   so the next message starts a fresh one (defaults to 12; 0 disables)
+- `ENABLE_AUDIO_TRANSCRIPTION` - Transcribe WhatsApp voice notes instead of escalating
+  them unheard (defaults to true)
+- `TRANSCRIPTION_MODEL` - OpenAI transcription model (defaults to `gpt-4o-mini-transcribe`)
 
 Copy `.env.example` to `.env` and configure your values.
 

@@ -32,6 +32,9 @@ from .models import ConversationStatus, ConversationSource, HumanAgent, AgentRol
 from .auth import authenticate_agent, create_access_token, get_current_agent, get_current_admin, get_password_hash, ACCESS_TOKEN_EXPIRE_MINUTES
 from .security import validate_webhook_request
 from .yeastar_client import YeastarClient
+from .transcription import (
+    transcribe_audio, is_audio, ENABLE_AUDIO_TRANSCRIPTION,
+)
 
 load_dotenv()
 
@@ -134,6 +137,67 @@ def apply_handover_if_needed(message: str, conversation_id: int, db) -> tuple:
         f"para conversación {conversation_id} (pendiente de confirmación)"
     )
     return derivation_offer_message(area), area
+
+# === Notas de voz ===
+def parse_msg_files(raw) -> list:
+    """Normaliza el campo msg_files del webhook de Yeastar a una lista de dicts.
+
+    La documentación dice que llega como un STRING con JSON (un array de objetos
+    File_Info: id, name, uri, type, size), pero según la versión puede llegar ya
+    deserializado. Se aceptan ambos y cualquier cosa rara devuelve lista vacía,
+    para que un adjunto con formato inesperado nunca tire abajo el webhook.
+    """
+    if not raw:
+        return []
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            logger.warning(f"Yeastar: msg_files no es JSON válido: {str(raw)[:200]}")
+            return []
+    if isinstance(raw, dict):
+        raw = [raw]
+    if not isinstance(raw, list):
+        return []
+    return [f for f in raw if isinstance(f, dict)]
+
+
+async def transcribe_voice_note(msg_files: list) -> Optional[str]:
+    """Descarga el primer adjunto que parezca audio y devuelve su transcripción.
+
+    Devuelve None si no hay audio, si la descarga falla o si no se entiende nada;
+    en todos esos casos quien llama escala a un humano, como se hacía antes.
+    """
+    if not ENABLE_AUDIO_TRANSCRIPTION:
+        return None
+
+    for archivo in msg_files:
+        nombre = str(archivo.get("name") or "")
+        tipo = str(archivo.get("type") or "")
+        uri = archivo.get("uri") or ""
+
+        # Se filtra por nombre/tipo ANTES de bajar el archivo para no descargar un
+        # video de varios MB al pedo. El contenido se vuelve a chequear después.
+        if not is_audio(content_type=tipo, filename=nombre):
+            continue
+
+        # El log del payload es a propósito: es la única forma de ver la forma real
+        # de msg_files en producción, que la documentación de Yeastar no precisa.
+        logger.info(f"Yeastar: adjunto de audio detectado -> {archivo}")
+
+        datos = await yeastar_client.download_file(uri)
+        if not datos:
+            logger.warning(f"Yeastar: no se pudo descargar el audio '{nombre}'; se escala a humano")
+            return None
+
+        if not is_audio(content_type=tipo, filename=nombre, data=datos):
+            logger.warning(f"Yeastar: '{nombre}' no parece audio tras descargarlo; se escala a humano")
+            return None
+
+        return transcribe_audio(datos, nombre)
+
+    return None
+
 
 # === Heavy Query Detection ===
 def is_heavy_query(query: str) -> bool:
@@ -636,10 +700,25 @@ async def yeastar_webhook(
         )
 
         # Check for media (msg_type != 0 means non-text message)
-        has_media = bool(msg.get("msg_files"))
+        msg_files = parse_msg_files(msg.get("msg_files"))
+        has_media = bool(msg_files)
         if msg_type and msg_type == 4:
             # Unsupported message type
             has_media = True
+
+        # Si el adjunto es una nota de voz, se transcribe y sigue por el camino de
+        # texto normal. Antes cualquier audio se escalaba a un humano sin saber
+        # siquiera qué decía, y la mayoría son preguntas que el bot ya contesta.
+        # Si la transcripción falla, has_media queda en True y se escala como antes.
+        if has_media and msg_files:
+            transcripcion = await transcribe_voice_note(msg_files)
+            if transcripcion:
+                msg_body = transcripcion
+                has_media = False
+                logger.info(
+                    f"Yeastar: nota de voz transcripta en session {session_id}, "
+                    f"se procesa como texto"
+                )
 
         # Save incoming message
         conversation_manager.save_message(

@@ -176,6 +176,54 @@ class YeastarClient:
             logger.warning(f"Yeastar token refresh error: {e}, re-authenticating")
             return await self._authenticate()
 
+    async def download_file(self, uri: str) -> Optional[bytes]:
+        """Descarga un archivo adjunto de un mensaje. Devuelve los bytes o None.
+
+        `uri` viene del campo msg_files del webhook (objetos File_Info con id,
+        name, uri, type, size). La documentación de Yeastar describe uri como "la
+        URI para acceder al archivo" pero NO especifica si es absoluta ni si
+        requiere el token, así que se contemplan ambos casos:
+          - absoluta (http…) se usa tal cual
+          - relativa se cuelga de base_url
+        y se agrega access_token salvo que la URI ya traiga uno.
+
+        Nunca lanza: si la descarga falla, quien llama sigue con el camino de
+        siempre (escalar a un humano).
+        """
+        if not uri:
+            return None
+        try:
+            if uri.startswith(("http://", "https://")):
+                url = uri
+            else:
+                url = f"{self.base_url}/{uri.lstrip('/')}"
+
+            if "access_token=" not in url:
+                token = await self._get_token()
+                sep = "&" if "?" in url else "?"
+                url = f"{url}{sep}access_token={token}"
+
+            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+                response = await client.get(url, headers={"User-Agent": "OpenAPI"})
+
+            if response.status_code != 200:
+                logger.error(
+                    f"Yeastar download failed: HTTP {response.status_code} para {uri}"
+                )
+                return None
+
+            # Un error de la API llega como JSON, no como el binario esperado.
+            content_type = response.headers.get("content-type", "")
+            if "application/json" in content_type:
+                logger.error(f"Yeastar download devolvió JSON en vez del archivo: {response.text[:200]}")
+                return None
+
+            logger.info(f"Yeastar: archivo descargado ({len(response.content)} bytes) de {uri}")
+            return response.content
+        except Exception as e:  # noqa: BLE001
+            logger.exception(f"Yeastar download error para {uri}: {e}")
+            return None
+
     async def send_message(self, session_id: int, message_body: str) -> dict:
         """
         Send a text message in an existing session.
