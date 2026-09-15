@@ -53,7 +53,10 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
 6. **Human Handover**: Automatic detection of requests for human assistance. When the
    AI lacks a fact it does **not** transfer straight away: it offers to derive and waits
    for the member to confirm (`pending_derivation_area` on `conversations`). Explicit
-   requests for a human and incoming media still transfer immediately.
+   requests for a human and incoming media still transfer immediately. Explicit requests
+   are detected by `should_handover_to_human` with patterns that need a target
+   ("pasame con un asesor"), not bare verbs: "pasame el número 2" must not transfer.
+   Offline cases in `tests/test_pedido_humano.py`.
    If the model admits a missing fact and refers the member elsewhere but forgets the
    `[DERIVAR_HUMANO:AREA]` tag, `detect_implicit_derivation` in `rag_chain.py` turns it
    into a derivation (needs BOTH signals; offline cases in

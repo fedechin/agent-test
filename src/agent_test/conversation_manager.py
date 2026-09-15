@@ -24,34 +24,41 @@ class ConversationManager:
     """Manages conversation state and human handover."""
 
     def __init__(self):
-        self.human_takeover_keywords = [
-            # Usted form (formal)
-            "hablar con humano", "hablar con una persona", "hablar con alguien",
-            "quiero hablar con humano", "necesito hablar con persona",
-            "quiero hablar con un representante", "necesito ayuda humana",
-            "puede transferirme", "puede pasarme", "puede conectarme",
-            "puedo hablar con", "puedo hablar con un operador", "puedo hablar con una persona",
-            "transferir a humano", "transferir a una persona",
-            "contacto humano", "persona real", "agente humano",
-            "atención al cliente", "soporte humano", "ayuda humana",
-            "hablar con operador", "hablar con un operador",
-
-            # Vos form (Paraguayan/Rioplatense)
-            "querés transferirme", "podés transferirme", "podés pasarme",
-            "podes transferir", "podes pasar", "transferime", "pasame",
-            "quiero hablar con vos", "necesito hablar con vos",
-            "conectame con", "pasame con", "hablá con",
-            "querés conectarme", "necesitás ayudarme",
-
-            # General phrases
-            "hablar con alguien", "hablar con operador",
-            "no entiendo", "esto no funciona", "problema grave",
-            "ayuda por favor", "necesito ayuda", "ayuda urgente",
-            "un humano", "una persona", "alguien que me ayude",
-
-            # English
-            "speak to human", "talk to human", "human agent", "transfer to human"
-        ]
+        # Pedido EXPLÍCITO de hablar con una persona: transfiere de inmediato, sin
+        # preguntar. Por eso tiene que ser estricto.
+        #
+        # Antes era una lista de subcadenas y transfería consultas comunes: "Podes
+        # pasarme las especializaciones en formato json" contiene "podes pasar";
+        # "pasame el número 2" contiene "pasame"; "¿el crédito es para una persona
+        # sola?" contiene "una persona"; "no entiendo cómo funciona la rueda" contiene
+        # "no entiendo". Ahora el verbo tiene que ir con A QUIÉN: "pasame con un
+        # asesor", "hablar con una persona". Si falta un pedido, el socio lo repite;
+        # si sobra, se corta la charla con el bot y se ocupa a una persona.
+        # Se evalúa sobre el texto normalizado (_normalize_reply: sin tildes ni signos).
+        destinatario = (
+            r"(?:(?:un|una|el|la|algun|alguna)\s+)?"
+            r"(?:humano|humana|persona|agente|operador|operadora|asesor|asesora|"
+            r"representante|ejecutivo|ejecutiva|funcionario|funcionaria|"
+            r"encargado|encargada|alguien)\b"
+        )
+        self.human_request_patterns = [re.compile(p) for p in (
+            # "quiero hablar con una persona", "puedo hablar con alguien de créditos"
+            r"\bhablar\s+con\s+" + destinatario,
+            # "pasame con un asesor", "me podes transferir a un agente", "comunicame con
+            # alguien". Exige "me": "transferir dinero a una persona" es otra cosa.
+            r"\b(?:pasame|pasarme|transferime|transferirme|conectame|conectarme|"
+            r"comunicame|comunicarme|derivame|derivarme)\s+(?:con|a|al)\s+" + destinatario,
+            r"\bme\s+(?:\w+\s+)?(?:pas|transfer|transfier|conect|comunic|deriv)\w*\s+"
+            r"(?:con|a|al)\s+" + destinatario,
+            # "quiero un humano", "necesito una persona real"
+            r"\b(?:quiero|necesito|prefiero)\s+(?:un|una)\s+(?:humano|humana|persona\s+real|"
+            r"agente|operador|operadora|asesor|asesora)\b",
+            r"\b(?:agente|atencion|ayuda|soporte|contacto)\s+human[oa]\b",
+            r"\bpersona\s+real\b",
+            r"\b(?:speak|talk)\s+(?:to|with)\s+(?:a\s+)?(?:human|person|agent|someone)\b",
+            r"\bhuman\s+agent\b",
+            r"\btransfer\s+(?:me\s+)?to\s+(?:a\s+)?human\b",
+        )]
 
         # Respuestas con las que el socio ACEPTA que lo derivemos. Se comparan sobre
         # el mensaje completo normalizado (sin tildes ni signos), no por substring:
@@ -216,10 +223,10 @@ class ConversationManager:
 
     def should_handover_to_human(self, message_text: Optional[str]) -> bool:
         """Check if message indicates customer wants to speak to human."""
-        if not message_text:
+        norm = self._normalize_reply(message_text)
+        if not norm:
             return False
-        message_lower = message_text.lower()
-        return any(keyword in message_lower for keyword in self.human_takeover_keywords)
+        return any(pattern.search(norm) for pattern in self.human_request_patterns)
 
     def request_human_takeover(self, conversation_id: int, db: Session) -> bool:
         """Request human takeover for conversation."""
