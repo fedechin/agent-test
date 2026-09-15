@@ -1,16 +1,21 @@
 import os
 import re
 import glob
+import json
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableLambda
+from openai import OpenAI
 
 load_dotenv()
 
 # === Configuration ===
 DATA_DIR = os.getenv("DOCS_FOLDER", "data")
 CONTEXT_PATH = os.getenv("CONTEXT_FILE", "context/context.txt")
+SCOPE_GUARD_PATH = os.getenv("SCOPE_GUARD_FILE", "context/scope_guard.txt")
 
 # Modelo de chat. Se puede cambiar por entorno (MODEL_NAME) para hacer A/B sin
 # tocar el código. gpt-4.1-mini sigue mejor las instrucciones y aprovecha mejor el
@@ -96,6 +101,59 @@ def derivation_offer_message(area: str = DEFAULT_DERIVATION_AREA) -> str:
         f"Si lo prefiere, {datos['contacto']}.\n\n"
         f"También puede seguir consultándome sobre otros temas."
     )
+
+
+# === Filtro de alcance ===
+# Respuesta fija para pedidos ajenos a la Cooperativa (poemas, código, política...)
+# y para intentos de cambiar las reglas del asistente o ver su prompt. NO es una
+# derivación: antes el modelo ofrecía derivar esos pedidos a un humano, ocupando a
+# una persona por algo que la cooperativa no atiende.
+OUT_OF_SCOPE_MESSAGE = (
+    "Disculpe, solo puedo ayudarle con consultas sobre los servicios y productos "
+    "de la Cooperativa Multiactiva Nazareth. ¿En qué le puedo ayudar? 😊"
+)
+
+
+# === Moderación de contenido ===
+# OpenAI Moderation API: gratis, no consume el límite de tokens del chat y funciona
+# en español. Se usa solo sobre el mensaje del socio (la salida sale de la base).
+MODERATION_MODEL = "omni-moderation-latest"
+
+# NO se bloquea todo lo que la API marca. Medido con mensajes de socios: marca
+# "violence" en víctimas ("me asaltaron saliendo del cajero, ¿el seguro cubre?",
+# "mi esposo me golpea y quiero un crédito para irme de casa") y "harassment" en
+# reclamos con una consulta real ("la puta madre, otra vez sin sistema, ¿a qué hora
+# abren?"). Esos siguen el flujo normal. Solo bloquean las subcategorías graves.
+MODERATION_BLOCK_CATEGORIES = {
+    "sexual",
+    "sexual/minors",
+    "hate",
+    "hate/threatening",
+    "harassment/threatening",
+    "violence/graphic",
+    "illicit/violent",
+}
+MODERATION_SELF_HARM_CATEGORIES = {
+    "self-harm",
+    "self-harm/intent",
+    "self-harm/instructions",
+}
+
+MODERATION_BLOCKED_MESSAGE = (
+    "Disculpe, no puedo ayudarle con ese mensaje. Estoy para responder sus consultas "
+    "sobre los servicios y productos de la Cooperativa Multiactiva Nazareth. "
+    "¿En qué le puedo ayudar?"
+)
+
+# Autolesión: no se rechaza ni se deriva, se contiene y se indica ayuda inmediata.
+# Reemplaza la respuesta entera porque la oferta de derivación de main.py también
+# reemplaza el texto completo: una nota antepuesta se perdería.
+MODERATION_SELF_HARM_MESSAGE = (
+    "Lamento mucho que esté pasando por un momento tan difícil. Si piensa en hacerse "
+    "daño o está en peligro, por favor llame ahora al 911 o acérquese al servicio de "
+    "urgencias más cercano. Hablar con alguien de confianza también puede ayudar.\n\n"
+    "Si lo desea, sigo aquí para ayudarle con cualquier consulta sobre la Cooperativa."
+)
 
 
 # === Saneamiento del texto de salida ===
@@ -252,11 +310,77 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
         formatted += "\n"
         return formatted
 
-    def answer_question(inputs):
-        query = str(inputs["query"])
-        instructions = inputs["instructions"]
-        conversation_history = inputs.get("conversation_history", [])
+    # Los guardrails (temas ajenos, intentos de cambiar las reglas, pedidos de otro
+    # formato o idioma) van en una llamada APARTE con su propio prompt corto
+    # (context/scope_guard.txt), NO como reglas del prompt principal. Se probó
+    # agregarlos ahí, en varias redacciones y posiciones, y siempre empeoró la
+    # derivación: gap-rueda-de-ahorros pasó de 7/10 a 0-4/10. El modelo generaliza
+    # cualquier instrucción de "no responder esto" y deja de emitir la frase de
+    # derivación. Un recordatorio de idioma/formato pegado a la pregunta fue peor
+    # aún (0/10). Así, para las consultas normales el prompt principal recibe
+    # exactamente lo mismo que antes.
+    scope_guard_prompt = load_context(SCOPE_GUARD_PATH)
+    guard_llm = ChatOpenAI(
+        model=model_name,
+        temperature=0.0,
+        model_kwargs={"response_format": {"type": "json_object"}},
+    )
+    GUARD_HISTORY_MESSAGES = 2
+    GUARD_HISTORY_MAXLEN = 300
+    guard_pool = ThreadPoolExecutor(max_workers=8)
 
+    def classify_scope(query, history):
+        """Clasifica el mensaje con el filtro de alcance. Devuelve el dict del filtro,
+        o None si no se pudo clasificar: en ese caso se atiende igual (fail-open),
+        porque rechazar una consulta legítima es peor que dejar pasar una ajena."""
+        if not scope_guard_prompt:
+            return None
+        # Los últimos turnos permiten reconocer seguimientos cortos ("sí", "el 2")
+        # como parte de una charla de la Cooperativa.
+        previos = ""
+        for msg in (history or [])[-GUARD_HISTORY_MESSAGES:]:
+            rol = "Socio" if msg["role"] == "customer" else "Asistente"
+            texto = re.sub(r"\s+", " ", str(msg["content"])).strip()[:GUARD_HISTORY_MAXLEN]
+            previos += f"{rol}: {texto}\n"
+        contenido = (
+            (f"ÚLTIMOS MENSAJES DE LA CONVERSACIÓN:\n{previos}\n" if previos else "")
+            + f"MENSAJE DEL SOCIO A CLASIFICAR:\n{query}"
+        )
+        try:
+            raw = guard_llm.invoke(
+                [SystemMessage(content=scope_guard_prompt), HumanMessage(content=contenido)]
+            ).content
+            verdict = json.loads(raw)
+            return verdict if isinstance(verdict, dict) else None
+        except Exception as e:  # noqa: BLE001
+            print(f"[WARN] Filtro de alcance no disponible, se atiende igual: {e}")
+            return None
+
+    moderation_client = OpenAI()
+
+    def moderate(query):
+        """Devuelve el mensaje fijo a enviar si la moderación lo exige, o None.
+        Si la API falla se atiende igual (fail-open), como el filtro de alcance."""
+        try:
+            result = moderation_client.moderations.create(
+                model=MODERATION_MODEL, input=query
+            ).results[0]
+        except Exception as e:  # noqa: BLE001
+            print(f"[WARN] Moderación no disponible, se atiende igual: {e}")
+            return None
+        flagged = {
+            name for name, value in result.categories.model_dump(by_alias=True).items()
+            if value
+        }
+        if flagged & MODERATION_SELF_HARM_CATEGORIES:
+            print(f"[WARN] Moderación: autolesión {sorted(flagged)}")
+            return MODERATION_SELF_HARM_MESSAGE
+        if flagged & MODERATION_BLOCK_CATEGORIES:
+            print(f"[WARN] Moderación: bloqueado {sorted(flagged)}")
+            return MODERATION_BLOCKED_MESSAGE
+        return None
+
+    def generate(query, instructions, conversation_history):
         # Con la base entera en contexto no hace falta reformular la pregunta ni
         # recuperar fragmentos: el modelo ve todo y resuelve los seguimientos con
         # el historial que le pasamos en el mismo prompt.
@@ -271,6 +395,35 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
 
         response = llm.invoke(messages)
         return response.content
+
+    def answer_question(inputs):
+        query = str(inputs["query"])
+        instructions = inputs["instructions"]
+        conversation_history = inputs.get("conversation_history", [])
+
+        # Moderación, filtro y respuesta corren en paralelo para no sumar latencia al
+        # caso normal. Si alguno de los controles corta, se descarta la respuesta.
+        moderation_future = guard_pool.submit(moderate, query)
+        guard_future = guard_pool.submit(classify_scope, query, conversation_history)
+        answer = generate(query, instructions, conversation_history)
+        moderation_message = moderation_future.result()
+        verdict = guard_future.result() or {}
+
+        if moderation_message:
+            return moderation_message
+
+        if str(verdict.get("categoria", "")).upper() == "AJENO":
+            return OUT_OF_SCOPE_MESSAGE
+
+        # Pedido de otro idioma o formato: se vuelve a generar con la consulta sin
+        # ese pedido. El prompt principal no logra ignorar "respondeme en inglés"
+        # cuando viene pegado a la pregunta. Es poco frecuente, así que la segunda
+        # llamada no pesa.
+        consulta_limpia = str(verdict.get("consulta") or "").strip()
+        if verdict.get("pide_formato_o_idioma") is True and consulta_limpia:
+            return generate(consulta_limpia, instructions, conversation_history)
+
+        return answer
 
     qa_chain = RunnableLambda(answer_question)
 

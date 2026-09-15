@@ -99,7 +99,7 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluador del chatbot Nazareth")
     parser.add_argument("--list", action="store_true",
                         help="solo listar los casos, sin llamar a OpenAI")
-    parser.add_argument("--category", help="filtrar por categoría (positive, retrieval, kb_gap)")
+    parser.add_argument("--category", help="filtrar por categoría (positive, retrieval, kb_gap, guardrail, moderation)")
     parser.add_argument("--id", help="correr un único caso por su id")
     parser.add_argument("--verbose", action="store_true",
                         help="imprimir la respuesta completa de cada caso")
