@@ -54,6 +54,11 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
    AI lacks a fact it does **not** transfer straight away: it offers to derive and waits
    for the member to confirm (`pending_derivation_area` on `conversations`). Explicit
    requests for a human and incoming media still transfer immediately.
+   If the model admits a missing fact and refers the member elsewhere but forgets the
+   `[DERIVAR_HUMANO:AREA]` tag, `detect_implicit_derivation` in `rag_chain.py` turns it
+   into a derivation (needs BOTH signals; offline cases in
+   `tests/test_derivacion_implicita.py`, run with `python3`).
+   OpenAI calls have timeouts (main 60s, guard/moderation 15s).
 7. **Media Handling**: Automatic detection and storage of images, documents, videos, and audio files
 8. **Agent Panel**: Secure interface at `/panel` for human agents to manage conversations
 9. **Role-Based Access Control**: Admin and agent roles with restricted access to agent management features

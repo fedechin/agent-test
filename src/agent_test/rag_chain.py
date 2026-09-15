@@ -23,6 +23,11 @@ SCOPE_GUARD_PATH = os.getenv("SCOPE_GUARD_FILE", "context/scope_guard.txt")
 # conocimiento entera en cada llamada.
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
 
+# Timeouts por llamada a OpenAI, en segundos. La respuesta principal lleva la base
+# entera y puede tardar; filtro y moderación son cortos y fail-open.
+LLM_TIMEOUT_SECONDS = 60
+GUARD_TIMEOUT_SECONDS = 15
+
 # Áreas de derivación (regla 3.1 del contexto) para cuando no hay información.
 # La etiqueta va como [DERIVAR_HUMANO:<AREA>]: el webhook la detecta para escalar
 # la conversación (request_human_takeover) y luego la elimina del texto antes de
@@ -43,7 +48,9 @@ DERIVATION_AREAS = {
         "contacto": "también puede llamar al 021 238 6777 int. 1800 o al 0981 770069",
     },
     # Consultas que gestiona el Departamento de Educación: precooperativa
-    # (canon y cuota) y extensión de horario en el alquiler de salones.
+    # (canon y cuota) y extensión de horario en el alquiler de salones. Solo eso de
+    # alquileres: el modelo extendía la regla a "alquilar el Country Club", que se
+    # definió que va a GENERAL.
     # Todavía no tenemos un número directo del área: usamos el conmutador.
     "EDUCACION": {
         "label": "al Departamento de Educación",
@@ -77,6 +84,50 @@ def derivation_message(area: str = DEFAULT_DERIVATION_AREA) -> str:
         f"derivar su consulta {datos['label']}, que se pondrá en contacto con "
         f"usted a la brevedad. Si lo prefiere, {datos['contacto']}."
     )
+
+
+# === Derivación implícita ===
+# A veces el modelo reconoce que no tiene el dato y remite al socio a otro canal,
+# pero omite la etiqueta [DERIVAR_HUMANO:...] ("los montos de la Rueda NO figuran…
+# le recomiendo comunicarse con un agente humano"). Sin etiqueta el webhook no ofrece
+# derivar y nadie se entera. Medido: 5 de 194 respuestas, todas en huecos reales.
+#
+# Se corrige acá y no en el prompt, porque tocar el prompt principal empeora la
+# derivación (ver build_rag_chain). Hacen falta las DOS señales: falta de dato Y
+# remisión a otro canal. Solo con la primera se disparaba en respuestas correctas
+# ("son 12 especialidades… No figuran 20") y la oferta de derivar, que reemplaza
+# el mensaje entero, le habría borrado la lista al socio.
+_DERIVATION_TAG_RE = re.compile(r"\[DERIVAR_HUMANO")
+_ABSENCE_RE = re.compile(
+    r"\bno\s+(?:figura[n]?|se\s+(?:especifica[n]?|detalla[n]?|menciona[n]?|indica[n]?)|"
+    r"tengo\s+(?:esa\s+|la\s+)?informaci[oó]n|cuento\s+con|dispongo\s+de|"
+    r"puedo\s+(?:brindarle|darle|confirmarle)|est[aá]n?\s+(?:disponible|establecid|especificad|detallad))"
+    r"|\b(?:base\s+de\s+conocimiento|nuestra\s+informaci[oó]n)\s+no\b",
+    re.IGNORECASE,
+)
+_REFERRAL_RE = re.compile(
+    r"agente\s+humano|derivar\s+su\s+consulta"
+    r"|le\s+recomiendo\s+(?:que\s+se\s+)?(?:consultar|contactar|comunicarse|comunique|llamar|acercarse)"
+    r"|comun[ií]quese|p[oó]ngase\s+en\s+contacto|552631|238\s*6777|0981\s*770069",
+    re.IGNORECASE,
+)
+# Área según el canal al que remitió el modelo. Por defecto GENERAL, igual que la
+# regla 3.1.1(c).
+_CENTRO_MEDICO_REFERRAL_RE = re.compile(r"238\s*6777|0981\s*770069", re.IGNORECASE)
+_EDUCACION_REFERRAL_RE = re.compile(r"departamento\s+de\s+educaci[oó]n", re.IGNORECASE)
+
+
+def detect_implicit_derivation(message: str):
+    """Devuelve el área si la respuesta es una derivación sin etiqueta, o None."""
+    if not message or _DERIVATION_TAG_RE.search(message):
+        return None
+    if not (_ABSENCE_RE.search(message) and _REFERRAL_RE.search(message)):
+        return None
+    if _CENTRO_MEDICO_REFERRAL_RE.search(message):
+        return "CENTRO_MEDICO"
+    if _EDUCACION_REFERRAL_RE.search(message):
+        return "EDUCACION"
+    return DEFAULT_DERIVATION_AREA
 
 
 def derivation_offer_message(area: str = DEFAULT_DERIVATION_AREA) -> str:
@@ -266,7 +317,13 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
     chat_prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
     # Temperatura 0: respuestas deterministas y sin "relleno" creativo. Priorizamos
     # evitar alucinaciones por sobre la naturalidad del tono.
-    llm = ChatOpenAI(model=model_name, temperature=0.0)
+    # El ChatOpenAI de langchain_community no trae timeout: si la conexión con OpenAI
+    # se traba, la llamada queda esperando para siempre (pasó al suspenderse la
+    # máquina a mitad de una llamada). Con timeout, la excepción llega a main.py,
+    # que le avisa al socio que hubo un problema.
+    llm = ChatOpenAI(
+        model=model_name, temperature=0.0, request_timeout=LLM_TIMEOUT_SECONDS
+    )
 
     # Tope de longitud para los mensajes del ASISTENTE en el historial. Las
     # respuestas largas previas (p.ej. un listado con formato) actúan como ejemplos
@@ -324,6 +381,9 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
         model=model_name,
         temperature=0.0,
         model_kwargs={"response_format": {"type": "json_object"}},
+        # El filtro es fail-open: mejor atender sin filtrar que demorar al socio.
+        request_timeout=GUARD_TIMEOUT_SECONDS,
+        max_retries=1,
     )
     GUARD_HISTORY_MESSAGES = 2
     GUARD_HISTORY_MAXLEN = 300
@@ -356,7 +416,7 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
             print(f"[WARN] Filtro de alcance no disponible, se atiende igual: {e}")
             return None
 
-    moderation_client = OpenAI()
+    moderation_client = OpenAI(timeout=GUARD_TIMEOUT_SECONDS, max_retries=1)
 
     def moderate(query):
         """Devuelve el mensaje fijo a enviar si la moderación lo exige, o None.
@@ -393,8 +453,12 @@ BASE DE CONOCIMIENTO COMPLETA (use EXCLUSIVAMENTE esta información; si el dato 
             conversation_history=formatted_history,
         )
 
-        response = llm.invoke(messages)
-        return response.content
+        answer = llm.invoke(messages).content
+        area = detect_implicit_derivation(answer)
+        if area:
+            print(f"[WARN] Derivación sin etiqueta detectada, se deriva a {area}")
+            return derivation_message(area)
+        return answer
 
     def answer_question(inputs):
         query = str(inputs["query"])
