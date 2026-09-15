@@ -38,6 +38,17 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
 2. **Document Loading**: Processes all `.txt` files in `data/` directory with 500-character chunks
 3. **WhatsApp Integration**: Twilio webhook at `/whatsapp` endpoint returning TwiML responses
 4. **Context Instructions**: Agent behavior defined in `context/context.txt` for Cooperativa Multiactiva Nazareth
+   - **Scope guard** (`context/scope_guard.txt`): a separate, short LLM call that runs in
+     parallel with the main one. Off-topic requests and attempts to change the rules or
+     reveal the prompt get a fixed reply (`OUT_OF_SCOPE_MESSAGE`, not a derivation);
+     requests for another format/language (JSON, tables, English) are answered again
+     without that request. Kept out of `context.txt` on purpose: adding those rules to
+     the main prompt measurably broke derivation. Fails open if the call errors.
+   - **Moderation** (OpenAI Moderation API, `omni-moderation-latest`): also in parallel,
+     on the member's message. Only severe subcategories block (sexual, hate, threats,
+     graphic/illicit violence); self-harm gets a support message with 911. Plain
+     `violence`/`harassment`/`illicit` do NOT block: they fire on crime victims and
+     angry members with real questions. Fails open.
 5. **Conversation History**: PostgreSQL database storing all conversations and messages
 6. **Human Handover**: Automatic detection of requests for human assistance. When the
    AI lacks a fact it does **not** transfer straight away: it offers to derive and waits
@@ -70,6 +81,7 @@ Required environment variables:
 - `SECRET_KEY` - JWT secret key for authentication (generate a strong random string)
 - `DOCS_FOLDER` - Document directory (defaults to "data")
 - `CONTEXT_FILE` - Context instructions file (defaults to "context/context.txt")
+- `SCOPE_GUARD_FILE` - Prompt of the scope guard (defaults to "context/scope_guard.txt")
 - `CONVERSATION_HISTORY_LIMIT` - Recent messages injected as context (defaults to 10)
 - `CONVERSATION_SESSION_TIMEOUT_HOURS` - Inactivity window that closes a conversation
   so the next message starts a fresh one (defaults to 12; 0 disables)
