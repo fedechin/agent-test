@@ -44,6 +44,10 @@ This is a production-ready RAG (Retrieval-Augmented Generation) agent built for 
      requests for another format/language (JSON, tables, English) are answered again
      without that request. Kept out of `context.txt` on purpose: adding those rules to
      the main prompt measurably broke derivation. Fails open if the call errors.
+     Safety net: `strip_markdown_layout` (inside `sanitize_outgoing`) turns code fences,
+     `#` headings and `|` tables into plain WhatsApp text, for format requests the guard
+     misses — a complaint ("¿por qué no redactaste en formato markdown?") was one.
+     Cases in `tests/test_formato_salida.py`.
    - **Moderation** (OpenAI Moderation API, `omni-moderation-latest`): also in parallel,
      on the member's message. Only severe subcategories block (sexual, hate, threats,
      graphic/illicit violence); self-harm gets a support message with 911. Plain

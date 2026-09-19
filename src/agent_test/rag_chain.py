@@ -254,7 +254,74 @@ def sanitize_outgoing(message: str) -> str:
 
     for pattern, replacement in _SANITIZE_COMPILED:
         message = pattern.sub(lambda m, r=replacement: _replace(m, r), message)
-    return message
+    return strip_markdown_layout(message)
+
+
+# === Markdown que WhatsApp no renderiza ===
+# El filtro de alcance saca los pedidos de formato, pero no puede anticipar toda
+# redacción posible: un reclamo ("¿por qué no redactaste en formato markdown?") lo
+# dejó pasar y el socio recibió tablas y un bloque ```markdown. Esto es la red de
+# seguridad: pase lo que pase, el texto sale en formato de WhatsApp.
+# Solo toca la DISPOSICIÓN (bloques de código, títulos, tablas). Las negritas y las
+# viñetas son parte del formato pedido (reglas 5.2 y 5.3) y no se tocan.
+_FENCE_RE = re.compile(r"^\s*```.*$")
+_HEADING_RE = re.compile(r"^\s*#{1,6}\s+(.+?)\s*#*\s*$")
+_TABLE_ROW_RE = re.compile(r"^\s*\|(.+)\|\s*$")
+_TABLE_SEPARATOR_RE = re.compile(r"^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$")
+
+
+def _table_cells(line: str) -> list:
+    return [c.strip() for c in _TABLE_ROW_RE.match(line).group(1).split("|")]
+
+
+def strip_markdown_layout(message: str) -> str:
+    """Convierte títulos, tablas y bloques de código a texto plano con viñetas."""
+    if not message or not any(s in message for s in ("```", "|", "#")):
+        return message
+
+    lines = message.split("\n")
+    salida, encabezado, i = [], None, 0
+    while i < len(lines):
+        line = lines[i]
+        if _FENCE_RE.match(line):
+            i += 1
+            continue
+        heading = _HEADING_RE.match(line)
+        if heading:
+            # Título -> negrita, que WhatsApp sí muestra.
+            salida.append(f"*{heading.group(1)}*")
+            encabezado = None
+            i += 1
+            continue
+        if _TABLE_ROW_RE.match(line):
+            # Fila de tabla. Si la siguiente línea es el separador, esta es el
+            # encabezado: sus nombres etiquetan las celdas de las filas siguientes.
+            if i + 1 < len(lines) and _TABLE_SEPARATOR_RE.match(lines[i + 1]):
+                encabezado = _table_cells(line)
+                i += 2
+                continue
+            celdas = _table_cells(line)
+            nombre = celdas[0] if celdas else ""
+            resto = celdas[1:]
+            if encabezado and len(encabezado) == len(celdas):
+                detalle = ", ".join(
+                    f"{titulo}: {valor}"
+                    for titulo, valor in zip(encabezado[1:], resto)
+                    if valor
+                )
+            else:
+                detalle = ", ".join(v for v in resto if v)
+            salida.append(f"- *{nombre}*: {detalle}" if detalle else f"- {nombre}")
+            i += 1
+            continue
+        if _TABLE_SEPARATOR_RE.match(line) and line.strip():
+            i += 1
+            continue
+        encabezado = None
+        salida.append(line)
+        i += 1
+    # Las líneas quitadas pueden dejar huecos de 3+ saltos seguidos.
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(salida)).strip()
 
 
 # === Base de conocimiento ===

@@ -14,8 +14,11 @@ Devuelva ÚNICAMENTE un objeto JSON con esta forma exacta:
 - Ante la duda, "COOPERATIVA".
 
 2. pide_formato_o_idioma
-- true si el mensaje pide la respuesta en un formato (JSON, XML, CSV, tabla, código, HTML, planilla) o en un idioma distinto del español. En cualquier otro caso, false.
+- true si el mensaje pide la respuesta en un formato (JSON, XML, CSV, Markdown, tabla, código, HTML, planilla) o en un idioma distinto del español.
+- true TAMBIÉN si el socio reclama, insiste o pregunta por el formato o el idioma de una respuesta anterior, aunque no vuelva a pedir los datos: "¿por qué no redactaste en formato markdown?", "te pedí en JSON", "no me lo diste en tabla", "respondeme de nuevo pero en inglés".
+- En cualquier otro caso, false.
 
 3. consulta
 - Si pide_formato_o_idioma es true: la misma consulta, en español, SIN el pedido de formato o idioma. Ejemplo: "Respondeme en inglés: what are the savings types?" → "¿Cuáles son los tipos de ahorro?".
+- Si el mensaje es un reclamo por el formato y no repite los datos pedidos, reconstruya la consulta a partir de los últimos mensajes: si antes pidió "redactar los datos de subsidios en formato markdown" y ahora escribe "¿por qué no redactaste en formato markdown?", la consulta es "¿Cuáles son los subsidios?".
 - En cualquier otro caso: "".
