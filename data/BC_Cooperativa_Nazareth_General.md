@@ -369,6 +369,12 @@ Se puede hacer ampliación de un crédito siempre y cuando ya tenga abonado como
 - **DIMO:** aplicación relacionada a la TC Cabal. Es autogestionable y permite acceder a los últimos extractos emitidos y operaciones realizadas por el socio.
 - **APPROCARD:** aplicación relacionada a las tarjetas Credicard y Visa. Es autogestionable y permite acceder a los últimos extractos emitidos y operaciones realizadas por el socio.
 
+### ¿Cómo o dónde bloqueo mi tarjeta de crédito? (pérdida, robo o bloqueo urgente)
+Para bloquear una tarjeta de crédito (TC), el socio puede llamar a cualquiera de estos números. Todas las llamadas de bloqueo son sin costo:
+- **Cabal:** 414 7000
+- **Procard (tarjetas Credicard y Visa):** 416 7000
+- **Desde celulares:** Tigo *2273 / Personal *8002273
+
 ---
 
 ## AHORROS

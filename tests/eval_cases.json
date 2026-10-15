@@ -106,6 +106,25 @@
       "notes": "KB: Credicard clásica, Credicard Luisito, Cabal clásica y Visa clásica."
     },
     {
+      "id": "pos-bloqueo-tc",
+      "category": "positive",
+      "question": "¿Dónde puedo bloquear mi tarjeta de crédito?",
+      "must_contain": [
+        "414 7000",
+        "416 7000"
+      ],
+      "notes": "KB (pedido 14/10/2026): Cabal 414 7000, Procard 416 7000, Tigo *2273, Personal *8002273; todos sin costo."
+    },
+    {
+      "id": "pos-bloqueo-tc-visa-robo",
+      "category": "positive",
+      "question": "Me robaron la cartera con mi Visa, ¿cómo la bloqueo urgente?",
+      "must_contain": [
+        "416 7000"
+      ],
+      "notes": "Visa la procesa Procard (KB: APPROCARD = Credicard y Visa). No debe responder con el bloqueo de cuentas ni derivar."
+    },
+    {
       "id": "pos-td-reimpresion-pin",
       "category": "positive",
       "question": "¿Cuánto cuesta la reimpresión del pin de mi tarjeta de débito?",
